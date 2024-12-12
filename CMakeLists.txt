@@ -5,8 +5,6 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wconversion -Wsign-conversion -Wshadow -Wped
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O1")
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 project(bigint LANGUAGES CXX)
 
 include(ExternalProject)
@@ -31,4 +29,5 @@ set(DOCTEST_INCLUDE_DIR ${source_dir}/doctest CACHE INTERNAL "Path to include fo
 add_executable(test test.cpp)
 
 add_executable(dtests doctest_main.cpp)
+target_compile_definitions(dtests PRIVATE DOCTEST)
 target_include_directories(dtests PUBLIC ${DOCTEST_INCLUDE_DIR})

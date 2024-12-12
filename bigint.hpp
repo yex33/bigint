@@ -2,7 +2,9 @@
 #include <string_view>
 #include <vector>
 
+#ifdef DOCTEST
 #include "doctest.h"
+#endif
 
 class bigint {
   bool sign;
@@ -23,5 +25,6 @@ inline bigint::bigint(std::string_view sv) {
 TEST_CASE("[bigint] reeee") {
   CHECK(1 == 1);
 }
+
 
 #endif
