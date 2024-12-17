@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -24,12 +25,14 @@ private:
   static constexpr WORD WORD_MAX = std::numeric_limits<WORD>::max();
   static constexpr DBLWORD BASE = static_cast<DBLWORD>(WORD_MAX) + 1;
 
+protected:
   // sign == true if n is negative, sign == false if n is positive
   bool sign;
-  std::vector<WORD> n;
+  std::vector<WORD> val;
 
 public:
-  bigint() noexcept : sign(false), n{0} {};
+  bigint() noexcept : sign(false), val{0} {};
+  bigint(int64_t n) noexcept;
   /**
    * a constructor that takes a string and a base, and converts the string to an
    * arbitrary-precision integer in that base.
@@ -58,6 +61,18 @@ public:
   [[nodiscard]]
   const bigint operator-() const noexcept;
 };
+
+inline bigint::bigint(int64_t n) noexcept : sign(false) {
+  if (n < 0)
+    sign = true;
+  n = std::abs(n);
+  WORD chunk = n & WORD_MAX;
+  while (chunk > 0) {
+    val.push_back(chunk);
+    n = n >> (sizeof(WORD) * 8);
+    chunk = n & WORD_MAX;
+  }
+}
 
 inline bigint::bigint(std::string_view sv, int base) noexcept(false)
     : bigint() {
@@ -148,15 +163,15 @@ inline const bigint bigint::operator+(const WORD b) const noexcept {
 
 inline const bigint &bigint::operator+=(const WORD b) noexcept {
   WORD carry = b;
-  for (WORD &ai : n) {
-    WORD next = (carry > WORD_MAX - ai) ? 1 : 0;
+  for (WORD &ai : val) {
+    WORD next = (ai + carry < ai) ? 1 : 0;
     ai += carry;
     carry = next;
     if (!carry)
       break;
   }
   if (carry > 0) {
-    n.push_back(carry);
+    val.push_back(carry);
   }
   return *this;
 }
@@ -169,29 +184,33 @@ inline const bigint bigint::operator*(const WORD b) const noexcept {
 }
 
 inline const bigint &bigint::operator*=(const WORD b) noexcept {
-  if (n.size() == 1 && !n[0])
+  if (val.size() == 1 && !val[0])
     return *this;
   if (!b) {
-    n.clear();
-    n.push_back(0);
+    val.clear();
+    val.push_back(0);
     sign = false;
     return *this;
   }
   WORD carry = 0;
-  for (WORD &ai : n) {
+  for (WORD &ai : val) {
     DBLWORD prod = static_cast<DBLWORD>(ai) * static_cast<DBLWORD>(b);
     ai = static_cast<WORD>(prod % BASE + carry);
     carry = static_cast<WORD>(prod / BASE);
   }
   if (carry > 0) {
-    n.push_back(carry);
+    val.push_back(carry);
   }
   return *this;
 }
 
 inline const bigint bigint::operator+(const bigint &b) const noexcept {}
 
-inline const bigint &bigint::operator+=(const bigint &b) noexcept {}
+inline const bigint &bigint::operator+=(const bigint &b) noexcept {
+  if (sign == b.sign) {
+    
+  }
+}
 
 inline const bigint bigint::operator-() const noexcept {
   bigint res = *this;
