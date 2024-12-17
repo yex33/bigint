@@ -17,34 +17,46 @@
 #endif
 
 class bigint {
-  using WORKUINT = std::uint64_t;
-  using RESUINT = std::uint32_t;
+  using DBLWORD = std::uint64_t;
+  using WORD = std::uint32_t;
 
 private:
-  static constexpr RESUINT RES_UMAX = std::numeric_limits<RESUINT>::max();
-  static constexpr WORKUINT BASE = static_cast<WORKUINT>(RES_UMAX) + 1;
+  static constexpr WORD WORD_MAX = std::numeric_limits<WORD>::max();
+  static constexpr DBLWORD BASE = static_cast<DBLWORD>(WORD_MAX) + 1;
+
+  // sign == true if n is negative, sign == false if n is positive
   bool sign;
-  std::vector<RESUINT> n;
+  std::vector<WORD> n;
 
 public:
-  bigint() noexcept : sign(false), n(std::vector<RESUINT>(1, 0)) {};
+  bigint() noexcept : sign(false), n{0} {};
   /**
    * a constructor that takes a string and a base, and converts the string to an
    * arbitrary-precision integer in that base.
    * @param sv the string to convert
    * @param base the number base
    */
-  bigint(std::string_view sv, std::int32_t base = 10) noexcept(false);
+  bigint(std::string_view sv, int base = 10) noexcept(false);
 
-  bigint operator+(const RESUINT b) const noexcept;
-  const bigint &operator+=(const RESUINT b) noexcept;
-  bigint operator*(const RESUINT b) const noexcept;
-  const bigint &operator*=(const RESUINT b) noexcept;
+  [[nodiscard]]
+  bigint operator+(const WORD b) const noexcept;
+  const bigint &operator+=(const WORD b) noexcept;
+  [[nodiscard]]
+  bigint operator*(const WORD b) const noexcept;
+  const bigint &operator*=(const WORD b) noexcept;
 
+  [[nodiscard]]
   bigint operator+(const bigint &b) const noexcept;
   const bigint &operator+=(const bigint &b) noexcept;
+  [[nodiscard]]
+  bigint operator-(const bigint &b) const noexcept;
+  const bigint &operator-=(const bigint &b) noexcept;
+  [[nodiscard]]
   bigint operator*(const bigint &b) const noexcept;
   const bigint &operator*=(const bigint &b) noexcept;
+
+  [[nodiscard]]
+  bigint operator-() const noexcept;
 };
 
 inline bigint::bigint(std::string_view sv, int base) noexcept(false)
@@ -72,17 +84,18 @@ inline bigint::bigint(std::string_view sv, int base) noexcept(false)
     sv = sv.substr(1);
   }
 
-  std::size_t wnd_size = static_cast<std::size_t>(std::log(RES_UMAX) / std::log(base));
+  std::size_t wnd_size =
+      static_cast<std::size_t>(std::log(WORD_MAX) / std::log(base));
 
   std::size_t offset = sv.size() % wnd_size;
   std::string_view sub = sv.substr(0, offset);
-  RESUINT wnd;
+  WORD wnd;
   std::from_chars(sub.data(), sub.data() + sub.size(), wnd, base);
   *this += wnd;
   for (std::size_t pos = offset; pos < sv.size(); pos += wnd_size) {
     sub = sv.substr(pos, wnd_size);
     std::from_chars(sub.data(), sub.data() + sub.size(), wnd, base);
-    *this *= static_cast<RESUINT>(std::pow(base, wnd_size));
+    *this *= static_cast<WORD>(std::pow(base, wnd_size));
     *this += wnd;
   }
 }
@@ -124,44 +137,64 @@ TEST_CASE("[bigint] out-of-range alnum w.r.t. given base should throw "
   CHECK_THROWS_AS(bigint _("1G2", 16), std::invalid_argument);
   CHECK_THROWS_AS(bigint _("1g2", 16), std::invalid_argument);
 }
-
 #endif
 
-inline bigint bigint::operator+(const RESUINT b) const noexcept {
+inline bigint bigint::operator+(const WORD b) const noexcept {
   bigint res;
   res += *this;
   res += b;
   return res;
 }
 
-inline const bigint &bigint::operator+=(const RESUINT b) noexcept {
-  if (b > RES_UMAX - n[0]) {
-    if (n.size() == 1) {
-      n.push_back(1);
-    } else {
-      n[1] += 1;
-    }
-    n[0] += b;
+inline const bigint &bigint::operator+=(const WORD b) noexcept {
+  WORD carry = b;
+  for (WORD &ai : n) {
+    WORD next = (carry > WORD_MAX - ai) ? 1 : 0;
+    ai += carry;
+    carry = next;
+    if (!carry)
+      break;
+  }
+  if (carry > 0) {
+    n.push_back(carry);
   }
   return *this;
 }
 
-inline bigint bigint::operator*(const RESUINT b) const noexcept {
+inline bigint bigint::operator*(const WORD b) const noexcept {
   bigint res;
   res += *this;
   res *= b;
   return res;
 }
 
-inline const bigint &bigint::operator*=(const RESUINT b) noexcept {
-  WORKUINT carry = 0;
-  for (RESUINT &ai : n) {
-    WORKUINT prod = static_cast<WORKUINT>(ai) * static_cast<WORKUINT>(b);
-    ai = static_cast<RESUINT>(prod % BASE + carry);
-    carry = prod / BASE;
+inline const bigint &bigint::operator*=(const WORD b) noexcept {
+  if (n.size() == 1 && !n[0])
+    return *this;
+  if (!b) {
+    n.clear();
+    n.push_back(0);
+    sign = false;
+    return *this;
+  }
+  WORD carry = 0;
+  for (WORD &ai : n) {
+    DBLWORD prod = static_cast<DBLWORD>(ai) * static_cast<DBLWORD>(b);
+    ai = static_cast<WORD>(prod % BASE + carry);
+    carry = static_cast<WORD>(prod / BASE);
   }
   if (carry > 0) {
-    n.push_back(static_cast<RESUINT>(carry));
+    n.push_back(carry);
   }
   return *this;
+}
+
+inline bigint bigint::operator+(const bigint &b) const noexcept {}
+
+inline const bigint &bigint::operator+=(const bigint &b) noexcept {}
+
+inline bigint bigint::operator-() const noexcept {
+  bigint res = *this;
+  res.sign = !res.sign;
+  return res;
 }
