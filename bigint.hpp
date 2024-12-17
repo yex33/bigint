@@ -39,24 +39,24 @@ public:
   bigint(std::string_view sv, int base = 10) noexcept(false);
 
   [[nodiscard]]
-  bigint operator+(const WORD b) const noexcept;
+  const bigint operator+(const WORD b) const noexcept;
   const bigint &operator+=(const WORD b) noexcept;
   [[nodiscard]]
-  bigint operator*(const WORD b) const noexcept;
+  const bigint operator*(const WORD b) const noexcept;
   const bigint &operator*=(const WORD b) noexcept;
 
   [[nodiscard]]
-  bigint operator+(const bigint &b) const noexcept;
+  const bigint operator+(const bigint &b) const noexcept;
   const bigint &operator+=(const bigint &b) noexcept;
   [[nodiscard]]
-  bigint operator-(const bigint &b) const noexcept;
+  const bigint operator-(const bigint &b) const noexcept;
   const bigint &operator-=(const bigint &b) noexcept;
   [[nodiscard]]
-  bigint operator*(const bigint &b) const noexcept;
+  const bigint operator*(const bigint &b) const noexcept;
   const bigint &operator*=(const bigint &b) noexcept;
 
   [[nodiscard]]
-  bigint operator-() const noexcept;
+  const bigint operator-() const noexcept;
 };
 
 inline bigint::bigint(std::string_view sv, int base) noexcept(false)
@@ -139,7 +139,7 @@ TEST_CASE("[bigint] out-of-range alnum w.r.t. given base should throw "
 }
 #endif
 
-inline bigint bigint::operator+(const WORD b) const noexcept {
+inline const bigint bigint::operator+(const WORD b) const noexcept {
   bigint res;
   res += *this;
   res += b;
@@ -161,7 +161,7 @@ inline const bigint &bigint::operator+=(const WORD b) noexcept {
   return *this;
 }
 
-inline bigint bigint::operator*(const WORD b) const noexcept {
+inline const bigint bigint::operator*(const WORD b) const noexcept {
   bigint res;
   res += *this;
   res *= b;
@@ -189,11 +189,11 @@ inline const bigint &bigint::operator*=(const WORD b) noexcept {
   return *this;
 }
 
-inline bigint bigint::operator+(const bigint &b) const noexcept {}
+inline const bigint bigint::operator+(const bigint &b) const noexcept {}
 
 inline const bigint &bigint::operator+=(const bigint &b) noexcept {}
 
-inline bigint bigint::operator-() const noexcept {
+inline const bigint bigint::operator-() const noexcept {
   bigint res = *this;
   res.sign = !res.sign;
   return res;
