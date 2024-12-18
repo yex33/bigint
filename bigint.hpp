@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cctype>
 #include <charconv>
 #include <cmath>
@@ -12,6 +13,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #ifdef DOCTEST
@@ -76,7 +78,7 @@ private:
   static constexpr DBLWORD BASE = static_cast<DBLWORD>(WORD_MAX) + 1;
 
   const bigint &val_plus(const bigint &b) noexcept;
-  const bigint &val_minus(const bigint &b) noexcept;
+  const bigint &val_monus(const bigint &b) noexcept;
   [[nodiscard]]
   bool val_less(const bigint &b) const noexcept;
   [[nodiscard]]
@@ -184,10 +186,10 @@ inline const bigint bigint::operator+(const WORD b) const noexcept {
 
 inline const bigint &bigint::operator+=(const WORD b) noexcept {
   WORD carry = b;
-  for (WORD &ai : val) {
-    WORD next = (ai + carry < ai) ? 1 : 0;
-    ai += carry;
-    carry = next;
+  for (std::size_t i = 0; i < val.size(); i++) {
+    WORD ai = val[i];
+    val[i] = ai + carry;
+    carry = (val[i] < ai) ? 1 : 0;
     if (!carry)
       break;
   }
@@ -219,18 +221,31 @@ inline const bigint &bigint::operator*=(const WORD b) noexcept {
     ai = static_cast<WORD>(prod % BASE + carry);
     carry = static_cast<WORD>(prod / BASE);
   }
-  if (carry > 0) {
+  if (carry > 0)
     val.push_back(carry);
-  }
   return *this;
 }
 
-inline const bigint bigint::operator+(const bigint &b) const noexcept {}
+inline const bigint bigint::operator+(const bigint &b) const noexcept {
+  bigint res;
+  res += *this;
+  res += b;
+  return res;
+}
 
 inline const bigint &bigint::operator+=(const bigint &b) noexcept {
   if (sign == b.sign) {
-    
+    val_plus(b);
+  } else {
+    if (val_less(b)) {
+      bigint tmp = b;
+      std::swap(*this, tmp);
+      val_monus(tmp);
+    } else {
+      val_monus(b);
+    }
   }
+  return *this;
 }
 
 inline const bigint bigint::operator-() const noexcept {
@@ -268,6 +283,32 @@ inline bool bigint::operator>(const bigint &b) const noexcept {
 inline bool bigint::operator<=(const bigint &b) const noexcept { return !(*this > b); }
 
 inline bool bigint::operator>=(const bigint &b) const noexcept { return !(*this < b); }
+
+inline const bigint &bigint::val_plus(const bigint &b) noexcept {
+  if (b.val.size() > val.size())
+    val.resize(b.val.size(), 0);
+  WORD carry = 0;
+  for (std::size_t i = 0; i < val.size(); i++) {
+    WORD ai = val[i], bi = i < b.val.size() ? b.val[i] : 0;
+    val[i] = ai + bi + carry;
+    carry = (val[i] < ai) ? 1 : 0;
+  }
+  if (carry)
+    val.push_back(carry);
+  return *this;
+}
+
+inline const bigint &bigint::val_monus(const bigint &b) noexcept {
+  WORD carry = 0;
+  for (std::size_t i = 0; i < val.size(); i++) {
+    WORD ai = val[i], bi = i < b.val.size() ? b.val[i] : 0;
+    val[i] = ai - bi - carry;
+    carry = (val[i] > ai) ? 1 : 0;
+  }
+  while (!*val.cend())
+    val.pop_back();
+  return *this;
+}
 
 inline bool bigint::val_less(const bigint &b) const noexcept {
   if (val.size() < b.val.size())
