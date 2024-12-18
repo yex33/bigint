@@ -239,15 +239,15 @@ inline const bigint bigint::operator-() const noexcept {
   return res;
 }
 
-bool bigint::operator==(const bigint &b) const noexcept {
+inline bool bigint::operator==(const bigint &b) const noexcept {
   return sign == b.sign && val == b.val;
 }
 
-bool bigint::operator!=(const bigint &b) const noexcept {
+inline bool bigint::operator!=(const bigint &b) const noexcept {
   return sign != b.sign || val != b.val;
 }
 
-bool bigint::operator<(const bigint &b) const noexcept {
+inline bool bigint::operator<(const bigint &b) const noexcept {
   if (sign && !b.sign) // a is -ve and b is +ve
     return true;
   if (!sign && b.sign) // a is +ve and b is -ve
@@ -256,7 +256,7 @@ bool bigint::operator<(const bigint &b) const noexcept {
   return val_less(b);
 }
 
-bool bigint::operator>(const bigint &b) const noexcept {
+inline bool bigint::operator>(const bigint &b) const noexcept {
   if (sign && !b.sign) // a is -ve and b is +ve
     return false;
   if (!sign && b.sign) // a is +ve and b is -ve
@@ -265,11 +265,11 @@ bool bigint::operator>(const bigint &b) const noexcept {
   return val_more(b);
 }
 
-bool bigint::operator<=(const bigint &b) const noexcept { return !(*this > b); }
+inline bool bigint::operator<=(const bigint &b) const noexcept { return !(*this > b); }
 
-bool bigint::operator>=(const bigint &b) const noexcept { return !(*this < b); }
+inline bool bigint::operator>=(const bigint &b) const noexcept { return !(*this < b); }
 
-bool bigint::val_less(const bigint &b) const noexcept {
+inline bool bigint::val_less(const bigint &b) const noexcept {
   if (val.size() < b.val.size())
     return true;
   if (val.size() > b.val.size())
@@ -281,7 +281,7 @@ bool bigint::val_less(const bigint &b) const noexcept {
   return false;
 }
 
-bool bigint::val_more(const bigint &b) const noexcept {
+inline bool bigint::val_more(const bigint &b) const noexcept {
   if (val.size() < b.val.size())
     return false;
   if (val.size() > b.val.size())
