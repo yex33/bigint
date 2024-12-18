@@ -87,11 +87,11 @@ inline bigint::bigint(int64_t n) noexcept : sign(false) {
   if (n < 0)
     sign = true;
   n = std::abs(n);
-  WORD chunk = n & WORD_MAX;
+  WORD chunk = static_cast<WORD>(n & WORD_MAX);
   while (chunk > 0) {
     val.push_back(chunk);
     n = n >> (sizeof(WORD) * 8);
-    chunk = n & WORD_MAX;
+    chunk = static_cast<WORD>(n & WORD_MAX);
   }
 }
 
