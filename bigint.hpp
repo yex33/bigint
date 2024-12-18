@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <ranges>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -20,10 +21,6 @@
 class bigint {
   using DBLWORD = std::uint64_t;
   using WORD = std::uint32_t;
-
-private:
-  static constexpr WORD WORD_MAX = std::numeric_limits<WORD>::max();
-  static constexpr DBLWORD BASE = static_cast<DBLWORD>(WORD_MAX) + 1;
 
 protected:
   // sign == true if n is negative, sign == false if n is positive
@@ -73,6 +70,17 @@ public:
   bool operator<=(const bigint &b) const noexcept;
   [[nodiscard]]
   bool operator>=(const bigint &b) const noexcept;
+
+private:
+  static constexpr WORD WORD_MAX = std::numeric_limits<WORD>::max();
+  static constexpr DBLWORD BASE = static_cast<DBLWORD>(WORD_MAX) + 1;
+
+  const bigint &val_plus(const bigint &b) noexcept;
+  const bigint &val_minus(const bigint &b) noexcept;
+  [[nodiscard]]
+  bool val_less(const bigint &b) const noexcept;
+  [[nodiscard]]
+  bool val_more(const bigint &b) const noexcept;
 };
 
 inline bigint::bigint(int64_t n) noexcept : sign(false) {
@@ -245,7 +253,7 @@ bool bigint::operator<(const bigint &b) const noexcept {
   if (!sign && b.sign) // a is +ve and b is -ve
     return false;
   // both a and b are +ve
-  return val < b.val;
+  return val_less(b);
 }
 
 bool bigint::operator>(const bigint &b) const noexcept {
@@ -254,9 +262,33 @@ bool bigint::operator>(const bigint &b) const noexcept {
   if (!sign && b.sign) // a is +ve and b is -ve
     return true;
   // both a and b are +ve
-  return val > b.val;
+  return val_more(b);
 }
 
 bool bigint::operator<=(const bigint &b) const noexcept { return !(*this > b); }
 
 bool bigint::operator>=(const bigint &b) const noexcept { return !(*this < b); }
+
+bool bigint::val_less(const bigint &b) const noexcept {
+  if (val.size() < b.val.size())
+    return true;
+  if (val.size() > b.val.size())
+    return false;
+  for (const auto [ai, bi] : std::views::zip(val, b.val) | std::views::reverse) {
+    if (ai < bi)
+      return true;
+  }
+  return false;
+}
+
+bool bigint::val_more(const bigint &b) const noexcept {
+  if (val.size() < b.val.size())
+    return false;
+  if (val.size() > b.val.size())
+    return true;
+  for (const auto [ai, bi] : std::views::zip(val, b.val) | std::views::reverse) {
+    if (ai > bi)
+      return true;
+  }
+  return false;
+}
