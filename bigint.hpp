@@ -60,6 +60,19 @@ public:
 
   [[nodiscard]]
   const bigint operator-() const noexcept;
+
+  [[nodiscard]]
+  bool operator==(const bigint &b) const noexcept;
+  [[nodiscard]]
+  bool operator!=(const bigint &b) const noexcept;
+  [[nodiscard]]
+  bool operator<(const bigint &b) const noexcept;
+  [[nodiscard]]
+  bool operator>(const bigint &b) const noexcept;
+  [[nodiscard]]
+  bool operator<=(const bigint &b) const noexcept;
+  [[nodiscard]]
+  bool operator>=(const bigint &b) const noexcept;
 };
 
 inline bigint::bigint(int64_t n) noexcept : sign(false) {
@@ -217,3 +230,33 @@ inline const bigint bigint::operator-() const noexcept {
   res.sign = !res.sign;
   return res;
 }
+
+bool bigint::operator==(const bigint &b) const noexcept {
+  return sign == b.sign && val == b.val;
+}
+
+bool bigint::operator!=(const bigint &b) const noexcept {
+  return sign != b.sign || val != b.val;
+}
+
+bool bigint::operator<(const bigint &b) const noexcept {
+  if (sign && !b.sign) // a is -ve and b is +ve
+    return true;
+  if (!sign && b.sign) // a is +ve and b is -ve
+    return false;
+  // both a and b are +ve
+  return val < b.val;
+}
+
+bool bigint::operator>(const bigint &b) const noexcept {
+  if (sign && !b.sign) // a is -ve and b is +ve
+    return false;
+  if (!sign && b.sign) // a is +ve and b is -ve
+    return true;
+  // both a and b are +ve
+  return val > b.val;
+}
+
+bool bigint::operator<=(const bigint &b) const noexcept { return !(*this > b); }
+
+bool bigint::operator>=(const bigint &b) const noexcept { return !(*this < b); }
