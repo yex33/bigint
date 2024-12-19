@@ -26,8 +26,11 @@ ExternalProject_Add(
 ExternalProject_Get_Property(doctest source_dir)
 set(DOCTEST_INCLUDE_DIR ${source_dir}/doctest CACHE INTERNAL "Path to include folder for doctest")
 
-add_executable(test test.cpp)
+add_executable(mytest test.cpp)
 
-add_executable(dtests doctest_main.cpp)
-target_compile_definitions(dtests PRIVATE DOCTEST)
-target_include_directories(dtests PUBLIC ${DOCTEST_INCLUDE_DIR})
+add_executable(doctest_main doctest_main.cpp)
+target_compile_definitions(doctest_main PRIVATE DOCTEST)
+target_include_directories(doctest_main PUBLIC ${DOCTEST_INCLUDE_DIR})
+
+enable_testing()
+add_test(NAME doctests COMMAND $<TARGET_FILE:doctest_main>)
