@@ -2,18 +2,20 @@ cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_CXX_STANDARD 23)
 
-if(MSVC)
+if(WIN32)
   add_compile_options(
     "/std:c++latest"
     "/WX" "/Wall"
     "$<$<CONFIG:RELEASE>:/O2>"
   )
+  message("this is WIN32")
 else()
   add_compile_options(
     "-Wall" "-Wextra" "-Wconversion" "-Wsign-conversion" "-Wshadow" "-Wpedantic"
     "$<$<CONFIG:DEBUG>:-O0 -g3>"
     "$<$<CONFIG:RELEASE>:-O2>"
   )
+  message("this is NOT WIN32")
 endif()
 
 project(bigint LANGUAGES CXX)
