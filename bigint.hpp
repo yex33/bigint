@@ -407,9 +407,13 @@ TEST_CASE("more than") {
 }
 #endif
 
-inline bool bigint::operator<=(const bigint &b) const noexcept { return !(*this > b); }
+inline bool bigint::operator<=(const bigint &b) const noexcept {
+  return !(*this > b);
+}
 
-inline bool bigint::operator>=(const bigint &b) const noexcept { return !(*this < b); }
+inline bool bigint::operator>=(const bigint &b) const noexcept {
+  return !(*this < b);
+}
 
 inline const bigint &bigint::val_plus(const bigint &b) noexcept {
   if (b.val.size() > val.size())
@@ -444,7 +448,8 @@ inline bool bigint::val_less(const bigint &b) const noexcept {
     return true;
   if (val.size() > b.val.size())
     return false;
-  for (const auto [ai, bi] : std::views::zip(val, b.val) | std::views::reverse) {
+  for (const auto [ai, bi] :
+       std::views::zip(val, b.val) | std::views::reverse) {
     if (ai < bi)
       return true;
   }
@@ -456,7 +461,8 @@ inline bool bigint::val_more(const bigint &b) const noexcept {
     return false;
   if (val.size() > b.val.size())
     return true;
-  for (const auto [ai, bi] : std::views::zip(val, b.val) | std::views::reverse) {
+  for (const auto [ai, bi] :
+       std::views::zip(val, b.val) | std::views::reverse) {
     if (ai > bi)
       return true;
   }
