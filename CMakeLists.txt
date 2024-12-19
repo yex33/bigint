@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 23)
 if(WIN32)
   add_compile_options(
     "/std:c++latest"
-    "/WX" "/Wall"
+    "/W4"
     "$<$<CONFIG:RELEASE>:/O2>"
   )
   message("this is WIN32")

@@ -196,7 +196,7 @@ inline const bigint &bigint::operator+=(const WORD b) noexcept {
   for (std::size_t i = 0; i < val.size(); i++) {
     WORD ai = val[i];
     val[i] = ai + carry;
-    carry = (val[i] < ai) ? 1 : 0;
+    carry = (val[i] < ai) ? 1u : 0;
     if (!carry)
       break;
   }
@@ -418,7 +418,7 @@ inline const bigint &bigint::val_plus(const bigint &b) noexcept {
   for (std::size_t i = 0; i < val.size(); i++) {
     WORD ai = val[i], bi = i < b.val.size() ? b.val[i] : 0;
     val[i] = ai + bi + carry;
-    carry = (val[i] < ai) ? 1 : 0;
+    carry = (val[i] < ai) ? 1u : 0;
   }
   if (carry) {
     val.push_back(carry);
@@ -431,7 +431,7 @@ inline const bigint &bigint::val_monus(const bigint &b) noexcept {
   for (std::size_t i = 0; i < val.size(); i++) {
     WORD ai = val[i], bi = i < b.val.size() ? b.val[i] : 0;
     val[i] = ai - bi - carry;
-    carry = (val[i] > ai) ? 1 : 0;
+    carry = (val[i] > ai) ? 1u : 0;
   }
   while (!*val.cend()) {
     val.pop_back();
