@@ -1,9 +1,20 @@
 cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wconversion -Wsign-conversion -Wshadow -Wpedantic")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
-set(CMAKE_CXX_FLAGS_RELEASE "-O1")
+
+if(MSVC)
+  add_compile_options(
+    "/std:c++latest"
+    "/WX" "/Wall"
+    "$<$<CONFIG:RELEASE>:/O2>"
+  )
+else()
+  add_compile_options(
+    "-Wall" "-Wextra" "-Wconversion" "-Wsign-conversion" "-Wshadow" "-Wpedantic"
+    "$<$<CONFIG:DEBUG>:-O0 -g3>"
+    "$<$<CONFIG:RELEASE>:-O2>"
+  )
+endif()
 
 project(bigint LANGUAGES CXX)
 
