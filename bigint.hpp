@@ -99,7 +99,7 @@ inline bigint::bigint(int64_t n) noexcept : sign(false) {
 
 inline bigint::bigint(std::string_view sv, int base) noexcept(false)
     : bigint() {
-  bool minus_flg = false, alnum_flg = false;
+  bool alnum_flg = false;
   for (char ch : sv) {
     if (std::isalnum(ch)) {
       alnum_flg = true;
@@ -109,17 +109,20 @@ inline bigint::bigint(std::string_view sv, int base) noexcept(false)
            << " used for integer of base " << base;
         throw std::invalid_argument(ss.str());
       }
-    } else if (ch == '-' && !alnum_flg && !minus_flg) {
+    } else if (ch == '-' && !alnum_flg && !sign) {
       sign = true;
-      minus_flg = true;
     } else {
       std::stringstream ss;
       ss << "invalid character " << std::quoted(std::string{ch}) << " found";
       throw std::invalid_argument(ss.str());
     }
   }
-  if (minus_flg) {
+  if (sign) {
     sv = sv.substr(1);
+  }
+  if (sv.size() == 1 && sv[0] == '0') { // 0 case, make +ve 0
+    sign = false;
+    return;
   }
 
   std::size_t wnd_size =
@@ -221,8 +224,10 @@ inline const bigint &bigint::operator*=(const WORD b) noexcept {
     ai = static_cast<WORD>(prod % BASE + carry);
     carry = static_cast<WORD>(prod / BASE);
   }
-  if (carry > 0)
+  if (carry > 0) {
     val.push_back(carry);
+  }
+
   return *this;
 }
 
@@ -293,8 +298,9 @@ inline const bigint &bigint::val_plus(const bigint &b) noexcept {
     val[i] = ai + bi + carry;
     carry = (val[i] < ai) ? 1 : 0;
   }
-  if (carry)
+  if (carry) {
     val.push_back(carry);
+  }
   return *this;
 }
 
@@ -305,8 +311,9 @@ inline const bigint &bigint::val_monus(const bigint &b) noexcept {
     val[i] = ai - bi - carry;
     carry = (val[i] > ai) ? 1 : 0;
   }
-  while (!*val.cend())
+  while (!*val.cend()) {
     val.pop_back();
+  }
   return *this;
 }
 
