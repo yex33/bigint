@@ -11,7 +11,7 @@ if(WIN32)
 else()
   add_compile_options(
     "-Wall" "-Wextra" "-Wconversion" "-Wsign-conversion" "-Wshadow" "-Wpedantic"
-    "$<$<CONFIG:DEBUG>:-O0 -g3>"
+    "$<$<CONFIG:DEBUG>:-Og>"
     "$<$<CONFIG:RELEASE>:-O2>"
   )
 endif()
