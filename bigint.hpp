@@ -86,8 +86,12 @@ private:
 };
 
 inline bigint::bigint(int64_t n) noexcept : sign(false) {
-  if (n < 0)
+  if (!n) {
+    val.push_back(0);
+  }
+  if (n < 0) {
     sign = true;
+  }
   n = std::abs(n);
   WORD chunk = static_cast<WORD>(n & WORD_MAX);
   while (chunk > 0) {
@@ -273,7 +277,11 @@ inline bool bigint::operator<(const bigint &b) const noexcept {
   if (!sign && b.sign) // a is +ve and b is -ve
     return false;
   // both a and b are +ve
-  return val_less(b);
+  if (!sign)
+    return val_less(b);
+  // both a and b are -ve
+  return val_more(b);
+}
 }
 
 inline bool bigint::operator>(const bigint &b) const noexcept {
@@ -282,7 +290,10 @@ inline bool bigint::operator>(const bigint &b) const noexcept {
   if (!sign && b.sign) // a is +ve and b is -ve
     return true;
   // both a and b are +ve
-  return val_more(b);
+  if (!sign)
+    return val_more(b);
+  // both a and b are -ve
+  return val_less(b);
 }
 
 inline bool bigint::operator<=(const bigint &b) const noexcept { return !(*this > b); }
