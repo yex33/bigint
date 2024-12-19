@@ -73,6 +73,8 @@ public:
   [[nodiscard]]
   bool operator>=(const bigint &b) const noexcept;
 
+  friend std::ostream &operator<<(std::ostream &os, const bigint &a) noexcept;
+
 private:
   static constexpr WORD WORD_MAX = std::numeric_limits<WORD>::max();
   static constexpr DBLWORD BASE = static_cast<DBLWORD>(WORD_MAX) + 1;
@@ -413,6 +415,17 @@ inline bool bigint::operator<=(const bigint &b) const noexcept {
 
 inline bool bigint::operator>=(const bigint &b) const noexcept {
   return !(*this < b);
+}
+
+inline std::ostream &operator<<(std::ostream &os, const bigint &a) noexcept {
+  os << '{';
+  if (a.sign)
+    os << '-';
+  for (const auto &ai : a.val) {
+    os << ai << ", ";
+  }
+  os << '}';
+  return os;
 }
 
 inline const bigint &bigint::val_plus(const bigint &b) noexcept {
