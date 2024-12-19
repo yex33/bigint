@@ -85,6 +85,8 @@ private:
   bool val_less(const bigint &b) const noexcept;
   [[nodiscard]]
   bool val_more(const bigint &b) const noexcept;
+  [[nodiscard]]
+  bool is_zero() const noexcept;
 };
 
 inline bigint::bigint(int64_t n) noexcept : sign(false) {
@@ -216,7 +218,7 @@ inline const bigint bigint::operator*(const WORD b) const noexcept {
 }
 
 inline const bigint &bigint::operator*=(const WORD b) noexcept {
-  if (val.size() == 1 && !val[0])
+  if (is_zero())
     return *this;
   if (!b) {
     val.clear();
@@ -244,16 +246,92 @@ inline const bigint bigint::operator+(const bigint &b) const noexcept {
   return res;
 }
 
+#ifdef DOCTEST_LIBRARY_INCLUDED
+TEST_CASE("operator+ basic functionality") {
+  // Addition of zero
+  CHECK_EQ(bigint(0) + bigint(0), bigint(0));
+  CHECK_EQ(bigint(12345) + bigint(0), bigint(12345));
+  CHECK_EQ(bigint(0) + bigint(12345), bigint(12345));
+
+  // Positive number addition
+  CHECK_EQ(bigint(12345) + bigint(67890), bigint(80235));
+  CHECK_EQ(bigint(999999) + bigint(1), bigint(1000000));
+
+  // Negative number addition
+  CHECK_EQ(bigint(-12345) + bigint(-67890), bigint(-80235));
+  CHECK_EQ(bigint(-999999) + bigint(-1), bigint(-1000000));
+
+  // Mixed sign addition
+  CHECK_EQ(bigint(12345) + bigint(-67890), bigint(-55545));
+  CHECK_EQ(bigint(-12345) + bigint(67890), bigint(55545));
+  CHECK_EQ(bigint(67890) + bigint(-12345), bigint(55545));
+
+  // Large number addition
+  CHECK_EQ(bigint("1234567891011121314151617181920") +
+               bigint("987654321098765432101234567890"),
+           bigint("2222222222119886746252851749810"));
+  CHECK_EQ(bigint("999999999999999999999999999999") + bigint("1"),
+           bigint("1000000000000000000000000000000"));
+
+  // Adding a WORD to bigint
+  CHECK_EQ(bigint(12345) + static_cast<std::uint32_t>(67890), bigint(80235));
+  CHECK_EQ(bigint("999999999999999999999999") + static_cast<std::uint32_t>(1),
+           bigint("1000000000000000000000000"));
+}
+
+TEST_CASE("operator+ edge cases") {
+  // Addition resulting in zero
+  CHECK_EQ(bigint(12345) + bigint(-12345), bigint(0));
+  CHECK_EQ(bigint(-12345) + bigint(12345), bigint(0));
+
+  // Addition with large negative and small positive
+  CHECK_EQ(bigint("-1000000000000000000000000") + bigint(1),
+           bigint("-999999999999999999999999"));
+
+  // Addition with large positive and small negative
+  CHECK_EQ(bigint("1000000000000000000000000") + bigint(-1),
+           bigint("999999999999999999999999"));
+}
+
+TEST_CASE("operator+ chaining") {
+  // Chained addition
+  CHECK_EQ(bigint(12345) + bigint(67890) + bigint(11111), bigint(91346));
+  CHECK_EQ(bigint(12345) + bigint(-12345) + bigint(67890), bigint(67890));
+  CHECK_EQ(bigint(12345) + bigint(0) + bigint(-12345), bigint(0));
+}
+
+TEST_CASE("operator+ extreme cases") {
+  // Very large numbers
+  CHECK_EQ(bigint("123456789123456789123456789") +
+               bigint("987654321987654321987654321"),
+           bigint("1111111111111111111111111110"));
+  CHECK_EQ(bigint("-123456789123456789123456789") +
+               bigint("987654321987654321987654321"),
+           bigint("864197532864197532864197532"));
+
+  // Numbers close to `BASE` boundaries
+  bigint base_minus_one("999999999999999999");
+  CHECK_EQ(base_minus_one + bigint(1), bigint("1000000000000000000"));
+  CHECK_EQ(base_minus_one + bigint(2), bigint("1000000000000000001"));
+}
+#endif
+
 inline const bigint &bigint::operator+=(const bigint &b) noexcept {
-  if (sign == b.sign) {
+  if (is_zero()) {
+    sign = b.sign;
+    val_plus(b);
+  } else if (sign == b.sign) {
     val_plus(b);
   } else {
     if (val_less(b)) {
-      bigint tmp = b;
-      std::swap(*this, tmp);
-      val_monus(tmp);
+      const bigint a = *this;
+      *this = b;
+      val_monus(a);
     } else {
       val_monus(b);
+    }
+    if (is_zero()) {
+      sign = false;
     }
   }
   return *this;
@@ -480,4 +558,8 @@ inline bool bigint::val_more(const bigint &b) const noexcept {
       return true;
   }
   return false;
+}
+
+inline bool bigint::is_zero() const noexcept {
+  return val.size() == 1 && !val.at(0);
 }
