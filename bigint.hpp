@@ -1,3 +1,5 @@
+#pragma once
+
 #include <algorithm>
 #include <cctype>
 #include <charconv>
@@ -6,7 +8,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iomanip>
-#include <iostream>
 #include <limits>
 #include <ranges>
 #include <sstream>
@@ -31,24 +32,24 @@ protected:
 
 public:
   bigint() noexcept : sign(false), val{0} {};
-  bigint(int64_t n) noexcept;
+  explicit bigint(int64_t n) noexcept;
   /**
    * a constructor that takes a string and a base, and converts the string to an
    * arbitrary-precision integer in that base.
    * @param sv the string to convert
    * @param base the number base
    */
-  bigint(std::string_view sv, int base = 10) noexcept(false);
+  explicit bigint(std::string_view sv, int base = 10) noexcept(false);
 
   [[nodiscard]]
-  const bigint operator+(const WORD b) const noexcept;
-  const bigint &operator+=(const WORD b) noexcept;
+  bigint operator+(WORD b) const noexcept;
+  const bigint &operator+=(WORD b) noexcept;
   [[nodiscard]]
-  const bigint operator*(const WORD b) const noexcept;
-  const bigint &operator*=(const WORD b) noexcept;
+  bigint operator*(WORD b) const noexcept;
+  const bigint &operator*=(WORD b) noexcept;
 
   [[nodiscard]]
-  const bigint operator+(const bigint &b) const noexcept;
+  bigint operator+(const bigint &b) const noexcept;
   const bigint &operator+=(const bigint &b) noexcept;
   [[nodiscard]]
   const bigint operator-(const bigint &b) const noexcept;
@@ -58,7 +59,7 @@ public:
   const bigint &operator*=(const bigint &b) noexcept;
 
   [[nodiscard]]
-  const bigint operator-() const noexcept;
+  bigint operator-() const noexcept;
 
   [[nodiscard]]
   bool operator==(const bigint &b) const noexcept;
@@ -133,8 +134,7 @@ inline bigint::bigint(std::string_view sv, int base) noexcept(false)
     return;
   }
 
-  std::size_t wnd_size =
-      static_cast<std::size_t>(std::log(WORD_MAX) / std::log(base));
+  auto wnd_size = static_cast<std::size_t>(std::log(WORD_MAX) / std::log(base));
 
   std::size_t offset = sv.size() % wnd_size;
   std::string_view sub = sv.substr(0, offset);
@@ -188,7 +188,7 @@ TEST_CASE("[bigint] out-of-range alnum w.r.t. given base should throw "
 }
 #endif
 
-inline const bigint bigint::operator+(const WORD b) const noexcept {
+inline bigint bigint::operator+(const WORD b) const noexcept {
   bigint res;
   res += *this;
   res += b;
@@ -210,7 +210,7 @@ inline const bigint &bigint::operator+=(const WORD b) noexcept {
   return *this;
 }
 
-inline const bigint bigint::operator*(const WORD b) const noexcept {
+inline bigint bigint::operator*(const WORD b) const noexcept {
   bigint res;
   res += *this;
   res *= b;
@@ -239,7 +239,7 @@ inline const bigint &bigint::operator*=(const WORD b) noexcept {
   return *this;
 }
 
-inline const bigint bigint::operator+(const bigint &b) const noexcept {
+inline bigint bigint::operator+(const bigint &b) const noexcept {
   bigint res;
   res += *this;
   res += b;
@@ -337,7 +337,7 @@ inline const bigint &bigint::operator+=(const bigint &b) noexcept {
   return *this;
 }
 
-inline const bigint bigint::operator-() const noexcept {
+inline bigint bigint::operator-() const noexcept {
   bigint res = *this;
   res.sign = !res.sign;
   return res;
@@ -511,7 +511,8 @@ inline const bigint &bigint::val_plus(const bigint &b) noexcept {
     val.resize(b.val.size(), 0);
   WORD carry = 0;
   for (std::size_t i = 0; i < val.size(); i++) {
-    WORD ai = val[i], bi = i < b.val.size() ? b.val[i] : 0;
+    const WORD ai = val[i];
+    const WORD bi = i < b.val.size() ? b.val[i] : 0;
     val[i] = ai + bi + carry;
     carry = (val[i] < ai) ? 1u : 0;
   }
@@ -524,7 +525,8 @@ inline const bigint &bigint::val_plus(const bigint &b) noexcept {
 inline const bigint &bigint::val_monus(const bigint &b) noexcept {
   WORD carry = 0;
   for (std::size_t i = 0; i < val.size(); i++) {
-    WORD ai = val[i], bi = i < b.val.size() ? b.val[i] : 0;
+    const WORD ai = val[i];
+    const WORD bi = i < b.val.size() ? b.val[i] : 0;
     val[i] = ai - bi - carry;
     carry = (val[i] > ai) ? 1u : 0;
   }
