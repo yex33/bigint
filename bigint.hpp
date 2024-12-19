@@ -267,9 +267,67 @@ inline bool bigint::operator==(const bigint &b) const noexcept {
   return sign == b.sign && val == b.val;
 }
 
+#ifdef DOCTEST_LIBRARY_INCLUDED
+TEST_CASE("equality") {
+  CHECK_EQ(bigint(), bigint());
+
+  CHECK_EQ(bigint(0), bigint(0));
+  CHECK_EQ(bigint(0), bigint(-0));
+  CHECK_EQ(bigint(12345), bigint(12345));
+  CHECK_EQ(bigint(-12345), bigint(-12345));
+  CHECK_EQ(bigint(123456789101112), bigint(123456789101112));
+
+  CHECK_EQ(bigint("0"), bigint("0"));
+  CHECK_EQ(bigint("0"), bigint("-0"));
+  CHECK_EQ(bigint("12345"), bigint("12345"));
+  CHECK_EQ(bigint("-12345"), bigint("-12345"));
+  CHECK_EQ(bigint("1234567891011121314151617181920"),
+           bigint("1234567891011121314151617181920"));
+  CHECK_EQ(bigint("-1234567891011121314151617181920"),
+           bigint("-1234567891011121314151617181920"));
+
+  CHECK_EQ(bigint(0), bigint("0"));
+  CHECK_EQ(bigint(0), bigint("-0"));
+  CHECK_EQ(bigint("12345"), bigint(12345));
+  CHECK_EQ(bigint(12345), bigint("12345"));
+}
+#endif
+
 inline bool bigint::operator!=(const bigint &b) const noexcept {
   return sign != b.sign || val != b.val;
 }
+
+#ifdef DOCTEST_LIBRARY_INCLUDED
+TEST_CASE("inequality") {
+  CHECK_NE(bigint(12345), bigint(12346));
+  CHECK_NE(bigint(12346), bigint(12345));
+  CHECK_NE(bigint(12345), bigint(123456));
+  CHECK_NE(bigint(12345), bigint(-12345));
+
+  CHECK_NE(bigint("12345"), bigint("12346"));
+  CHECK_NE(bigint("12346"), bigint("12345"));
+  CHECK_NE(bigint("12345"), bigint("123456"));
+  CHECK_NE(bigint("12345"), bigint("-12345"));
+  CHECK_NE(bigint("-12345"), bigint("12345"));
+
+  CHECK_NE(bigint("1234567891011121314151617181920"),
+           bigint("1234567891011121314151617181921"));
+  CHECK_NE(bigint("1234567891011121314151617181921"),
+           bigint("1234567891011121314151617181920"));
+  CHECK_NE(bigint("1234567891011121314151617181920"),
+           bigint("-1234567891011121314151617181920"));
+  CHECK_NE(bigint("-1234567891011121314151617181920"),
+           bigint("1234567891011121314151617181920"));
+  CHECK_NE(bigint("123456789101112131415161718192"),
+           bigint("1234567891011121314151617181920"));
+
+  CHECK_NE(bigint("12345"), bigint(12346));
+  CHECK_NE(bigint(12345), bigint("12346"));
+  CHECK_NE(bigint("12345"), bigint(123456));
+  CHECK_NE(bigint("12345"), bigint(-12345));
+  CHECK_NE(bigint(-12345), bigint("12345"));
+}
+#endif
 
 inline bool bigint::operator<(const bigint &b) const noexcept {
   if (sign && !b.sign) // a is -ve and b is +ve
@@ -282,7 +340,33 @@ inline bool bigint::operator<(const bigint &b) const noexcept {
   // both a and b are -ve
   return val_more(b);
 }
+
+#ifdef DOCTEST_LIBRARY_INCLUDED
+TEST_CASE("less than") {
+  CHECK_LT(bigint(12345), bigint(12346));
+  CHECK_LT(bigint(12345), bigint(123456));
+  CHECK_LT(bigint(-12345), bigint(12345));
+  CHECK_LT(bigint(-123456), bigint(-12345));
+  CHECK_LT(bigint(123456789101112), bigint(123456789101113));
+
+  CHECK_LT(bigint("12345"), bigint("12346"));
+  CHECK_LT(bigint("12345"), bigint("123456"));
+  CHECK_LT(bigint("-12345"), bigint("12345"));
+  CHECK_LT(bigint("-123456"), bigint("-12345"));
+
+  CHECK_LT(bigint("1234567891011121314151617181920"),
+           bigint("1234567891011121314151617181921"));
+  CHECK_LT(bigint("-1234567891011121314151617181920"),
+           bigint("1234567891011121314151617181920"));
+  CHECK_LT(bigint("123456789101112131415161718192"),
+           bigint("1234567891011121314151617181920"));
+
+  CHECK_LT(bigint("12345"), bigint(12346));
+  CHECK_LT(bigint(12345), bigint("12346"));
+  CHECK_LT(bigint("12345"), bigint(123456));
+  CHECK_LT(bigint(-12345), bigint("12345"));
 }
+#endif
 
 inline bool bigint::operator>(const bigint &b) const noexcept {
   if (sign && !b.sign) // a is -ve and b is +ve
@@ -295,6 +379,33 @@ inline bool bigint::operator>(const bigint &b) const noexcept {
   // both a and b are -ve
   return val_less(b);
 }
+
+#ifdef DOCTEST_LIBRARY_INCLUDED
+TEST_CASE("more than") {
+  CHECK_GT(bigint(12346), bigint(12345));
+  CHECK_GT(bigint(123456), bigint(12345));
+  CHECK_GT(bigint(12345), bigint(-12345));
+  CHECK_GT(bigint(-12345), bigint(-123456));
+  CHECK_GT(bigint(123456789101113), bigint(123456789101112));
+
+  CHECK_GT(bigint("12346"), bigint("12345"));
+  CHECK_GT(bigint("123456"), bigint("12345"));
+  CHECK_GT(bigint("12345"), bigint("-12345"));
+  CHECK_GT(bigint("-12345"), bigint("-123456"));
+
+  CHECK_GT(bigint("1234567891011121314151617181921"),
+           bigint("1234567891011121314151617181920"));
+  CHECK_GT(bigint("1234567891011121314151617181920"),
+           bigint("-1234567891011121314151617181920"));
+  CHECK_GT(bigint("1234567891011121314151617181920"),
+           bigint("123456789101112131415161718192"));
+
+  CHECK_GT(bigint(12346), bigint("12345"));
+  CHECK_GT(bigint("12346"), bigint(12345));
+  CHECK_GT(bigint(123456), bigint("12345"));
+  CHECK_GT(bigint("12345"), bigint(-12345));
+}
+#endif
 
 inline bool bigint::operator<=(const bigint &b) const noexcept { return !(*this > b); }
 
