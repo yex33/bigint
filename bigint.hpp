@@ -54,7 +54,7 @@ public:
   const bigint operator-(const bigint &b) const noexcept;
   const bigint &operator-=(const bigint &b) noexcept;
   [[nodiscard]]
-  const bigint operator*(const bigint &b) const noexcept;
+  bigint operator*(const bigint &b) const noexcept;
   const bigint &operator*=(const bigint &b) noexcept;
 
   [[nodiscard]]
@@ -79,8 +79,9 @@ private:
   static constexpr WORD WORD_MAX = std::numeric_limits<WORD>::max();
   static constexpr DBLWORD BASE = static_cast<DBLWORD>(WORD_MAX) + 1;
 
-  const bigint &val_plus(const bigint &b) noexcept;
+  const bigint &val_plus(const bigint &b, std::size_t offset = 0) noexcept;
   const bigint &val_monus(const bigint &b) noexcept;
+  const bigint &val_mult(const bigint &b) noexcept;
   [[nodiscard]]
   bool val_less(const bigint &b) const noexcept;
   [[nodiscard]]
@@ -339,6 +340,96 @@ inline const bigint &bigint::operator+=(const bigint &b) noexcept {
   return *this;
 }
 
+inline bigint bigint::operator*(const bigint &b) const noexcept {
+  bigint res;
+  res += *this;
+  res *= b;
+  return res;
+}
+
+#ifdef DOCTEST_LIBRARY_INCLUDED
+TEST_CASE("operator* basic functionality") {
+  // Multiplication with zero
+  CHECK_EQ(bigint(0) * bigint(0), bigint(0));
+  CHECK_EQ(bigint(12345) * bigint(0), bigint(0));
+  CHECK_EQ(bigint(0) * bigint(12345), bigint(0));
+
+  // Multiplication with one
+  CHECK_EQ(bigint(12345) * bigint(1), bigint(12345));
+  CHECK_EQ(bigint(1) * bigint(12345), bigint(12345));
+
+  // Positive number multiplication
+  CHECK_EQ(bigint(123) * bigint(456), bigint(56088));
+  CHECK_EQ(bigint(999) * bigint(999), bigint(998001));
+
+  // Negative number multiplication
+  CHECK_EQ(bigint(-123) * bigint(456), bigint(-56088));
+  CHECK_EQ(bigint(123) * bigint(-456), bigint(-56088));
+  CHECK_EQ(bigint(-123) * bigint(-456), bigint(56088));
+
+  // Multiplication with WORD
+  CHECK_EQ(bigint(12345) * static_cast<std::uint32_t>(6789), bigint(83810205));
+  CHECK_EQ(bigint("987654321987654321") * static_cast<std::uint32_t>(10),
+           bigint("9876543219876543210"));
+}
+
+TEST_CASE("operator* edge cases") {
+  // Multiplication resulting in zero
+  CHECK_EQ(bigint(12345) * bigint(0), bigint(0));
+  CHECK_EQ(bigint(0) * bigint(12345), bigint(0));
+  CHECK_EQ(bigint(-12345) * bigint(0), bigint(0));
+  CHECK_EQ(bigint(0) * bigint(-12345), bigint(0));
+
+  // Multiplication resulting in a negative number
+  CHECK_EQ(bigint(12345) * bigint(-1), bigint(-12345));
+  CHECK_EQ(bigint(-12345) * bigint(1), bigint(-12345));
+  CHECK_EQ(bigint(-12345) * bigint(-1), bigint(12345));
+
+  // Multiplication with large numbers
+  CHECK_EQ(bigint("1000000000000000000") * bigint("1000000000000000000"),
+           bigint("1000000000000000000000000000000000000"));
+}
+
+TEST_CASE("operator* chaining") {
+  // Chained multiplication
+  CHECK_EQ(bigint(2) * bigint(3) * bigint(4), bigint(24));
+  CHECK_EQ(bigint(10) * bigint(-5) * bigint(2), bigint(-100));
+  CHECK_EQ(bigint(-2) * bigint(-3) * bigint(-4), bigint(-24));
+}
+
+TEST_CASE("operator* extreme cases") {
+  // Very large numbers
+  CHECK_EQ(bigint("123456789123456789123456789123456789") *
+               bigint("987654321987654321987654321987654321"),
+           bigint("121932631356500531591068431825636331816338969581771069347203"
+                  "169112635269"));
+
+  // Numbers close to `BASE` boundaries
+  bigint base_minus_one("999999999999999999");
+  CHECK_EQ(base_minus_one * bigint(2), bigint("1999999999999999998"));
+  CHECK_EQ(base_minus_one * bigint(10), bigint("9999999999999999990"));
+
+  // Large positive * small negative
+  CHECK_EQ(bigint("1000000000000000000") * bigint(-1),
+           bigint("-1000000000000000000"));
+
+  // Multiplication with very small and very large numbers
+  CHECK_EQ(bigint(1) * bigint("999999999999999999"),
+           bigint("999999999999999999"));
+  CHECK_EQ(bigint("-1") * bigint("999999999999999999"),
+           bigint("-999999999999999999"));
+}
+#endif
+
+inline const bigint &bigint::operator*=(const bigint &b) noexcept {
+  sign = (sign != b.sign);
+  val_mult(b);
+  if (is_zero()) {
+    sign = false;
+  }
+  return *this;
+}
+
 inline bigint bigint::operator-() const noexcept {
   bigint res = *this;
   res.sign = !res.sign;
@@ -508,13 +599,14 @@ inline std::ostream &operator<<(std::ostream &os, const bigint &a) noexcept {
   return os;
 }
 
-inline const bigint &bigint::val_plus(const bigint &b) noexcept {
-  if (b.val.size() > val.size())
-    val.resize(b.val.size(), 0);
+inline const bigint &bigint::val_plus(const bigint &b,
+                                      std::size_t offset) noexcept {
+  if (b.val.size() + offset > val.size())
+    val.resize(b.val.size() + offset, 0);
   WORD carry = 0;
-  for (std::size_t i = 0; i < val.size(); i++) {
+  for (std::size_t i = offset; i < val.size(); i++) {
     const WORD ai = val[i];
-    const WORD bi = i < b.val.size() ? b.val[i] : 0;
+    const WORD bi = i - offset < b.val.size() ? b.val[i - offset] : 0;
     val[i] = ai + bi + carry;
     carry = (val[i] < ai) ? 1u : 0;
   }
@@ -535,6 +627,15 @@ inline const bigint &bigint::val_monus(const bigint &b) noexcept {
   while (val.size() > 1 && !val.back()) {
     val.pop_back();
   }
+  return *this;
+}
+
+inline const bigint &bigint::val_mult(const bigint &b) noexcept {
+  bigint s(0);
+  for (std::size_t i = 0; i < b.val.size(); i++) {
+    s.val_plus(*this * b.val[i], i);
+  }
+  val = s.val;
   return *this;
 }
 
