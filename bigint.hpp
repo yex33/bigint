@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <cctype>
 #include <charconv>
 #include <cmath>
@@ -9,12 +8,12 @@
 #include <cstdlib>
 #include <iomanip>
 #include <limits>
+#include <ostream>
 #include <ranges>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 #ifdef DOCTEST
@@ -137,10 +136,13 @@ inline bigint::bigint(std::string_view sv, int base) noexcept(false)
   auto wnd_size = static_cast<std::size_t>(std::log(WORD_MAX) / std::log(base));
 
   std::size_t offset = sv.size() % wnd_size;
-  std::string_view sub = sv.substr(0, offset);
   WORD wnd;
-  std::from_chars(sub.data(), sub.data() + sub.size(), wnd, base);
-  *this += wnd;
+  std::string_view sub;
+  if (offset) {
+    sub = sv.substr(0, offset);
+    std::from_chars(sub.data(), sub.data() + sub.size(), wnd, base);
+    *this += wnd;
+  }
   for (std::size_t pos = offset; pos < sv.size(); pos += wnd_size) {
     sub = sv.substr(pos, wnd_size);
     std::from_chars(sub.data(), sub.data() + sub.size(), wnd, base);
@@ -198,7 +200,7 @@ inline bigint bigint::operator+(const WORD b) const noexcept {
 inline const bigint &bigint::operator+=(const WORD b) noexcept {
   WORD carry = b;
   for (std::size_t i = 0; i < val.size(); i++) {
-    WORD ai = val[i];
+    const WORD ai = val[i];
     val[i] = ai + carry;
     carry = (val[i] < ai) ? 1u : 0;
     if (!carry)
@@ -229,8 +231,8 @@ inline const bigint &bigint::operator*=(const WORD b) noexcept {
   WORD carry = 0;
   for (WORD &ai : val) {
     DBLWORD prod = static_cast<DBLWORD>(ai) * static_cast<DBLWORD>(b);
-    ai = static_cast<WORD>(prod % BASE + carry);
-    carry = static_cast<WORD>(prod / BASE);
+    ai = static_cast<WORD>((prod + carry) % BASE);
+    carry = static_cast<WORD>((prod + carry) / BASE);
   }
   if (carry > 0) {
     val.push_back(carry);
@@ -269,7 +271,7 @@ TEST_CASE("operator+ basic functionality") {
   // Large number addition
   CHECK_EQ(bigint("1234567891011121314151617181920") +
                bigint("987654321098765432101234567890"),
-           bigint("2222222222119886746252851749810"));
+           bigint("2222222212109886746252851749810"));
   CHECK_EQ(bigint("999999999999999999999999999999") + bigint("1"),
            bigint("1000000000000000000000000000000"));
 
@@ -530,7 +532,7 @@ inline const bigint &bigint::val_monus(const bigint &b) noexcept {
     val[i] = ai - bi - carry;
     carry = (val[i] > ai) ? 1u : 0;
   }
-  while (!*val.cend()) {
+  while (val.size() > 1 && !val.back()) {
     val.pop_back();
   }
   return *this;
