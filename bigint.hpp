@@ -191,6 +191,8 @@ TEST_CASE("[bigint] out-of-range alnum w.r.t. given base should throw "
 }
 #endif
 
+// addition operator
+
 inline bigint bigint::operator+(const WORD b) const noexcept {
   bigint res;
   res += *this;
@@ -213,40 +215,32 @@ inline const bigint &bigint::operator+=(const WORD b) noexcept {
   return *this;
 }
 
-inline bigint bigint::operator*(const WORD b) const noexcept {
-  bigint res;
-  res += *this;
-  res *= b;
-  return res;
-}
-
-inline const bigint &bigint::operator*=(const WORD b) noexcept {
-  if (is_zero())
-    return *this;
-  if (!b) {
-    val.clear();
-    val.push_back(0);
-    sign = false;
-    return *this;
-  }
-  WORD carry = 0;
-  for (WORD &ai : val) {
-    DBLWORD prod = static_cast<DBLWORD>(ai) * static_cast<DBLWORD>(b);
-    ai = static_cast<WORD>((prod + carry) % BASE);
-    carry = static_cast<WORD>((prod + carry) / BASE);
-  }
-  if (carry > 0) {
-    val.push_back(carry);
-  }
-
-  return *this;
-}
-
 inline bigint bigint::operator+(const bigint &b) const noexcept {
   bigint res;
   res += *this;
   res += b;
   return res;
+}
+
+inline const bigint &bigint::operator+=(const bigint &b) noexcept {
+  if (is_zero()) {
+    sign = b.sign;
+    val_plus(b);
+  } else if (sign == b.sign) {
+    val_plus(b);
+  } else {
+    if (val_less(b)) {
+      const bigint a = *this;
+      *this = b;
+      val_monus(a);
+    } else {
+      val_monus(b);
+    }
+    if (is_zero()) {
+      sign = false;
+    }
+  }
+  return *this;
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
@@ -319,24 +313,34 @@ TEST_CASE("operator+ extreme cases") {
 }
 #endif
 
-inline const bigint &bigint::operator+=(const bigint &b) noexcept {
-  if (is_zero()) {
-    sign = b.sign;
-    val_plus(b);
-  } else if (sign == b.sign) {
-    val_plus(b);
-  } else {
-    if (val_less(b)) {
-      const bigint a = *this;
-      *this = b;
-      val_monus(a);
-    } else {
-      val_monus(b);
-    }
-    if (is_zero()) {
-      sign = false;
-    }
+// multiplication operator
+
+inline bigint bigint::operator*(const WORD b) const noexcept {
+  bigint res;
+  res += *this;
+  res *= b;
+  return res;
+}
+
+inline const bigint &bigint::operator*=(const WORD b) noexcept {
+  if (is_zero())
+    return *this;
+  if (!b) {
+    val.clear();
+    val.push_back(0);
+    sign = false;
+    return *this;
   }
+  WORD carry = 0;
+  for (WORD &ai : val) {
+    DBLWORD prod = static_cast<DBLWORD>(ai) * static_cast<DBLWORD>(b);
+    ai = static_cast<WORD>((prod + carry) % BASE);
+    carry = static_cast<WORD>((prod + carry) / BASE);
+  }
+  if (carry > 0) {
+    val.push_back(carry);
+  }
+
   return *this;
 }
 
@@ -345,6 +349,15 @@ inline bigint bigint::operator*(const bigint &b) const noexcept {
   res += *this;
   res *= b;
   return res;
+}
+
+inline const bigint &bigint::operator*=(const bigint &b) noexcept {
+  sign = (sign != b.sign);
+  val_mult(b);
+  if (is_zero()) {
+    sign = false;
+  }
+  return *this;
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
@@ -421,20 +434,13 @@ TEST_CASE("operator* extreme cases") {
 }
 #endif
 
-inline const bigint &bigint::operator*=(const bigint &b) noexcept {
-  sign = (sign != b.sign);
-  val_mult(b);
-  if (is_zero()) {
-    sign = false;
-  }
-  return *this;
-}
-
 inline bigint bigint::operator-() const noexcept {
   bigint res = *this;
   res.sign = !res.sign;
   return res;
 }
+
+// comparison operators
 
 inline bool bigint::operator==(const bigint &b) const noexcept {
   return sign == b.sign && val == b.val;
