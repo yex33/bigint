@@ -28,49 +28,191 @@ protected:
   std::vector<WORD> val;
 
 public:
-  bigint() noexcept : sign(false), val{0} {};
-  explicit bigint(int64_t n) noexcept;
   /**
-   * a constructor that takes a string and a base, and converts the string to an
-   * arbitrary-precision integer in that base.
+   * Default constructor for bigint. Initializes to 0.
+   */
+  bigint() noexcept : sign(false), val{0} {};
+
+  /**
+   * Constructs a bigint from a 64-bit integer.
+   * @param n The integer to initialize the bigint.
+   */
+  explicit bigint(int64_t n) noexcept;
+
+  /**
+   * A constructor that takes a string and converts the string to an
+   * arbitrary-precision integer..
    * @param sv the string to convert
-   * @param base the number base
    */
   explicit bigint(std::string_view sv, int base = 10) noexcept(false);
 
+  /**
+   * Adds a single WORD to the bigint.
+   * @param b The WORD to add.
+   * @return A new bigint representing the result.
+   */
   [[nodiscard]]
   bigint operator+(WORD b) const noexcept;
+
+  /**
+   * Adds a single WORD to the bigint in-place.
+   * @param b The WORD to add.
+   * @return A reference to the updated bigint.
+   */
   const bigint &operator+=(WORD b) noexcept;
+
+  /**
+   * Multiplies the bigint by a single WORD.
+   * @param b The WORD to multiply with.
+   * @return A new bigint representing the result.
+   */
   [[nodiscard]]
   bigint operator*(WORD b) const noexcept;
+
+  /**
+   * Multiplies the bigint by a single WORD in-place.
+   * @param b The WORD to multiply with.
+   * @return A reference to the updated bigint.
+   */
   const bigint &operator*=(WORD b) noexcept;
 
+  /**
+   * Adds another bigint to this bigint.
+   * @param b The bigint to add.
+   * @return A new bigint representing the result.
+   */
   [[nodiscard]]
   bigint operator+(const bigint &b) const noexcept;
+
+  /**
+   * Adds another bigint to this bigint in-place.
+   * @param b The bigint to add.
+   * @return A reference to the updated bigint.
+   */
   const bigint &operator+=(const bigint &b) noexcept;
+
+  /**
+   * Subtracts another bigint from this bigint.
+   * @param b The bigint to subtract.
+   * @return A new bigint representing the result.
+   */
   [[nodiscard]]
   bigint operator-(const bigint &b) const noexcept;
+
+  /**
+   * Subtracts another bigint from this bigint in-place.
+   * @param b The bigint to subtract.
+   * @return A reference to the updated bigint.
+   */
   const bigint &operator-=(const bigint &b) noexcept;
+
+  /**
+   * Multiplies this bigint by another bigint.
+   * @param b The bigint to multiply with.
+   * @return A new bigint representing the result.
+   */
   [[nodiscard]]
   bigint operator*(const bigint &b) const noexcept;
+
+  /**
+   * Multiplies this bigint by another bigint in-place.
+   * @param b The bigint to multiply with.
+   * @return A reference to the updated bigint.
+   */
   const bigint &operator*=(const bigint &b) noexcept;
 
+  /**
+   * Computes the negation of this bigint.
+   * @return A new bigint representing the negated value.
+   */
   [[nodiscard]]
   bigint operator-() const noexcept;
 
+  /**
+   * Checks equality between two bigints.
+   * @param b The bigint to compare with.
+   * @return True if the two bigints are equal, false otherwise.
+   */
   [[nodiscard]]
   bool operator==(const bigint &b) const noexcept;
+
+  /**
+   * Checks inequality between two bigints.
+   * @param b The bigint to compare with.
+   * @return True if the two bigints are not equal, false otherwise.
+   */
   [[nodiscard]]
   bool operator!=(const bigint &b) const noexcept;
+
+  /**
+   * Checks if this bigint is less than another bigint.
+   * @param b The bigint to compare with.
+   * @return True if this bigint is less than the given bigint, false otherwise.
+   */
   [[nodiscard]]
   bool operator<(const bigint &b) const noexcept;
+
+  /**
+   * Checks if this bigint is greater than another bigint.
+   * @param b The bigint to compare with.
+   * @return True if this bigint is greater than the given bigint, false
+   * otherwise.
+   */
   [[nodiscard]]
   bool operator>(const bigint &b) const noexcept;
+
+  /**
+   * Checks if this bigint is less than or equal to another bigint.
+   * @param b The bigint to compare with.
+   * @return True if this bigint is less than or equal to the given bigint,
+   * false otherwise.
+   */
   [[nodiscard]]
   bool operator<=(const bigint &b) const noexcept;
+
+  /**
+   * Checks if this bigint is greater than or equal to another bigint.
+   * @param b The bigint to compare with.
+   * @return True if this bigint is greater than or equal to the given bigint,
+   * false otherwise.
+   */
   [[nodiscard]]
   bool operator>=(const bigint &b) const noexcept;
 
+  /**
+   * Prefix increment operator.
+   * @return A reference to the updated bigint.
+   */
+  [[nodiscard]]
+  const bigint &operator++() noexcept;
+
+  /**
+   * Postfix increment operator.
+   * @return A new bigint representing the value before the increment.
+   */
+  [[nodiscard]]
+  bigint operator++(int) noexcept;
+
+  /**
+   * Prefix decrement operator.
+   * @return A reference to the updated bigint.
+   */
+  [[nodiscard]]
+  const bigint &operator--() noexcept;
+
+  /**
+   * Postfix decrement operator.
+   * @return A new bigint representing the value before the decrement.
+   */
+  [[nodiscard]]
+  bigint operator--(int) noexcept;
+
+  /**
+   * Outputs the bigint to the given output stream.
+   * @param os The output stream.
+   * @param a The bigint to output.
+   * @return The output stream.
+   */
   friend std::ostream &operator<<(std::ostream &os, const bigint &a) noexcept;
 
 private:
@@ -393,6 +535,31 @@ inline bigint bigint::operator-() const noexcept {
   if (!is_zero()) {
     res.sign = !res.sign;
   }
+  return res;
+}
+
+// pre/post-fix operators
+inline const bigint &bigint::operator++() noexcept {
+  *this += 1;
+  return *this;
+}
+
+inline bigint bigint::operator++(int _) noexcept {
+  bigint res;
+  res += *this;
+  *this += 1;
+  return res;
+}
+
+inline const bigint &bigint::operator--() noexcept {
+  *this -= bigint(1);
+  return *this;
+}
+
+inline bigint bigint::operator--(int _) noexcept {
+  bigint res;
+  res += *this;
+  *this -= bigint(1);
   return res;
 }
 
