@@ -51,7 +51,7 @@ public:
   bigint operator+(const bigint &b) const noexcept;
   const bigint &operator+=(const bigint &b) noexcept;
   [[nodiscard]]
-  const bigint operator-(const bigint &b) const noexcept;
+  bigint operator-(const bigint &b) const noexcept;
   const bigint &operator-=(const bigint &b) noexcept;
   [[nodiscard]]
   bigint operator*(const bigint &b) const noexcept;
@@ -434,11 +434,96 @@ TEST_CASE("operator* extreme cases") {
 }
 #endif
 
-inline bigint bigint::operator-() const noexcept {
-  bigint res = *this;
-  res.sign = !res.sign;
+// minus operator
+
+inline bigint bigint::operator-(const bigint &b) const noexcept {
+  bigint res;
+  res += *this;
+  res -= b;
   return res;
 }
+
+inline const bigint &bigint::operator-=(const bigint &b) noexcept {
+  *this += -b;
+  return *this;
+}
+
+inline bigint bigint::operator-() const noexcept {
+  bigint res;
+  res += *this;
+  if (!is_zero()) {
+    res.sign = !res.sign;
+  }
+  return res;
+}
+
+#ifdef DOCTEST_LIBRARY_INCLUDED
+TEST_CASE("operator- basic functionality") {
+  // Subtraction resulting in zero
+  CHECK_EQ(bigint(0) - bigint(0), bigint(0));
+  CHECK_EQ(bigint(12345) - bigint(12345), bigint(0));
+  CHECK_EQ(bigint(-12345) - bigint(-12345), bigint(0));
+
+  // Subtracting zero
+  CHECK_EQ(bigint(12345) - bigint(0), bigint(12345));
+  CHECK_EQ(bigint(-12345) - bigint(0), bigint(-12345));
+  CHECK_EQ(bigint(0) - bigint(12345), bigint(-12345));
+  CHECK_EQ(bigint(0) - bigint(-12345), bigint(12345));
+
+  // Positive number subtraction
+  CHECK_EQ(bigint(12345) - bigint(54321), bigint(-41976));
+  CHECK_EQ(bigint(54321) - bigint(12345), bigint(41976));
+
+  // Negative number subtraction
+  CHECK_EQ(bigint(-12345) - bigint(54321), bigint(-66666));
+  CHECK_EQ(bigint(12345) - bigint(-54321), bigint(66666));
+  CHECK_EQ(bigint(-12345) - bigint(-54321), bigint(41976));
+}
+
+TEST_CASE("operator- edge cases") {
+  // Subtraction resulting in negative numbers
+  CHECK_EQ(bigint(12345) - bigint(54321), bigint(-41976));
+  CHECK_EQ(bigint(-54321) - bigint(12345), bigint(-66666));
+
+  // Subtraction involving large numbers
+  CHECK_EQ(bigint("1000000000000000000") - bigint("999999999999999999"),
+           bigint(1));
+  CHECK_EQ(bigint("999999999999999999") - bigint("1000000000000000000"),
+           bigint(-1));
+
+  // Subtraction near the BASE boundary
+  bigint base_minus_one("999999999999999999");
+  CHECK_EQ(base_minus_one - bigint(1), bigint("999999999999999998"));
+  CHECK_EQ(base_minus_one - bigint("1000000000000000000"), bigint(-1));
+}
+
+TEST_CASE("operator- chaining") {
+  // Chained subtraction
+  CHECK_EQ(bigint(10) - bigint(5) - bigint(2), bigint(3));
+  CHECK_EQ(bigint(100) - bigint(50) - bigint(30), bigint(20));
+  CHECK_EQ(bigint(-10) - bigint(-5) - bigint(-2), bigint(-3));
+}
+
+TEST_CASE("operator- extreme cases") {
+  // Very large numbers
+  CHECK_EQ(bigint("123456789123456789") - bigint("987654321987654321"),
+           bigint("-864197532864197532"));
+  CHECK_EQ(bigint("987654321987654321") - bigint("123456789123456789"),
+           bigint("864197532864197532"));
+
+  // Numbers with different signs
+  CHECK_EQ(bigint("123456789123456789") - bigint("-987654321987654321"),
+           bigint("1111111111111111110"));
+  CHECK_EQ(bigint("-123456789123456789") - bigint("987654321987654321"),
+           bigint("-1111111111111111110"));
+
+  // Subtraction with small numbers
+  CHECK_EQ(bigint(1) - bigint(1), bigint(0));
+  CHECK_EQ(bigint(-1) - bigint(-1), bigint(0));
+  CHECK_EQ(bigint(-1) - bigint(1), bigint(-2));
+  CHECK_EQ(bigint(1) - bigint(-1), bigint(2));
+}
+#endif
 
 // comparison operators
 
