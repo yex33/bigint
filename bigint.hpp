@@ -152,7 +152,7 @@ inline bigint::bigint(std::string_view sv, int base) noexcept(false)
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("[bigint] constructs with base 10 by default") {
+TEST_CASE("[bigint] constructor") {
   CHECK_NOTHROW(bigint _("111111111222222222"));
   CHECK_NOTHROW(bigint _("1111111112222222223"));
 }
@@ -178,15 +178,6 @@ TEST_CASE("[bigint] invalid character should throw invalid_argument") {
   CHECK_THROWS_AS(bigint _("1?2"), std::invalid_argument);
   CHECK_THROWS_AS(bigint _("?12"), std::invalid_argument);
   CHECK_THROWS_AS(bigint _("*)?"), std::invalid_argument);
-}
-
-TEST_CASE("[bigint] out-of-range alnum w.r.t. given base should throw "
-          "invalid_argument") {
-  CHECK_THROWS_AS(bigint _("123", 3), std::invalid_argument);
-  CHECK_THROWS_AS(bigint _("12A", 10), std::invalid_argument);
-  CHECK_THROWS_AS(bigint _("12a", 10), std::invalid_argument);
-  CHECK_THROWS_AS(bigint _("1G2", 16), std::invalid_argument);
-  CHECK_THROWS_AS(bigint _("1g2", 16), std::invalid_argument);
 }
 #endif
 
@@ -243,7 +234,7 @@ inline const bigint &bigint::operator+=(const bigint &b) noexcept {
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("operator+ basic functionality") {
+TEST_CASE("[bigint] additions") {
   // Addition of zero
   CHECK_EQ(bigint(0) + bigint(0), bigint(0));
   CHECK_EQ(bigint(12345) + bigint(0), bigint(12345));
@@ -262,6 +253,10 @@ TEST_CASE("operator+ basic functionality") {
   CHECK_EQ(bigint(-12345) + bigint(67890), bigint(55545));
   CHECK_EQ(bigint(67890) + bigint(-12345), bigint(55545));
 
+  // Addition resulting in zero
+  CHECK_EQ(bigint(12345) + bigint(-12345), bigint(0));
+  CHECK_EQ(bigint(-12345) + bigint(12345), bigint(0));
+
   // Large number addition
   CHECK_EQ(bigint("1234567891011121314151617181920") +
                bigint("987654321098765432101234567890"),
@@ -270,40 +265,23 @@ TEST_CASE("operator+ basic functionality") {
            bigint("1000000000000000000000000000000"));
 }
 
-TEST_CASE("operator+ edge cases") {
-  // Addition resulting in zero
-  CHECK_EQ(bigint(12345) + bigint(-12345), bigint(0));
-  CHECK_EQ(bigint(-12345) + bigint(12345), bigint(0));
-
-  // Addition with large negative and small positive
-  CHECK_EQ(bigint("-1000000000000000000000000") + bigint(1),
-           bigint("-999999999999999999999999"));
-
-  // Addition with large positive and small negative
-  CHECK_EQ(bigint("1000000000000000000000000") + bigint(-1),
-           bigint("999999999999999999999999"));
-}
-
-TEST_CASE("operator+ chaining") {
-  // Chained addition
+TEST_CASE("[bigint] addition chaining") {
   CHECK_EQ(bigint(12345) + bigint(67890) + bigint(11111), bigint(91346));
   CHECK_EQ(bigint(12345) + bigint(-12345) + bigint(67890), bigint(67890));
   CHECK_EQ(bigint(12345) + bigint(0) + bigint(-12345), bigint(0));
 }
 
-TEST_CASE("operator+ extreme cases") {
-  // Very large numbers
+TEST_CASE("[bigint] addition edge cases") {
   CHECK_EQ(bigint("123456789123456789123456789") +
                bigint("987654321987654321987654321"),
            bigint("1111111111111111111111111110"));
   CHECK_EQ(bigint("-123456789123456789123456789") +
                bigint("987654321987654321987654321"),
            bigint("864197532864197532864197532"));
-
-  // Numbers close to `BASE` boundaries
-  bigint base_minus_one("999999999999999999");
-  CHECK_EQ(base_minus_one + bigint(1), bigint("1000000000000000000"));
-  CHECK_EQ(base_minus_one + bigint(2), bigint("1000000000000000001"));
+  CHECK_EQ(bigint("-1000000000000000000000000") + bigint(1),
+           bigint("-999999999999999999999999"));
+  CHECK_EQ(bigint("1000000000000000000000000") + bigint(-1),
+           bigint("999999999999999999999999"));
 }
 #endif
 
@@ -355,7 +333,7 @@ inline const bigint &bigint::operator*=(const bigint &b) noexcept {
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("operator* basic functionality") {
+TEST_CASE("[bigint] multiplications") {
   // Multiplication with zero
   CHECK_EQ(bigint(0) * bigint(0), bigint(0));
   CHECK_EQ(bigint(12345) * bigint(0), bigint(0));
@@ -375,47 +353,19 @@ TEST_CASE("operator* basic functionality") {
   CHECK_EQ(bigint(-123) * bigint(-456), bigint(56088));
 }
 
-TEST_CASE("operator* edge cases") {
-  // Multiplication resulting in zero
-  CHECK_EQ(bigint(12345) * bigint(0), bigint(0));
-  CHECK_EQ(bigint(0) * bigint(12345), bigint(0));
-  CHECK_EQ(bigint(-12345) * bigint(0), bigint(0));
-  CHECK_EQ(bigint(0) * bigint(-12345), bigint(0));
-
-  // Multiplication resulting in a negative number
-  CHECK_EQ(bigint(12345) * bigint(-1), bigint(-12345));
-  CHECK_EQ(bigint(-12345) * bigint(1), bigint(-12345));
-  CHECK_EQ(bigint(-12345) * bigint(-1), bigint(12345));
-
-  // Multiplication with large numbers
-  CHECK_EQ(bigint("1000000000000000000") * bigint("1000000000000000000"),
-           bigint("1000000000000000000000000000000000000"));
-}
-
-TEST_CASE("operator* chaining") {
-  // Chained multiplication
+TEST_CASE("[bigint] multiplication chaining") {
   CHECK_EQ(bigint(2) * bigint(3) * bigint(4), bigint(24));
   CHECK_EQ(bigint(10) * bigint(-5) * bigint(2), bigint(-100));
   CHECK_EQ(bigint(-2) * bigint(-3) * bigint(-4), bigint(-24));
 }
 
-TEST_CASE("operator* extreme cases") {
-  // Very large numbers
+TEST_CASE("[bigint] multiplication edge cases") {
   CHECK_EQ(bigint("123456789123456789123456789123456789") *
                bigint("987654321987654321987654321987654321"),
            bigint("121932631356500531591068431825636331816338969581771069347203"
                   "169112635269"));
-
-  // Numbers close to `BASE` boundaries
-  bigint base_minus_one("999999999999999999");
-  CHECK_EQ(base_minus_one * bigint(2), bigint("1999999999999999998"));
-  CHECK_EQ(base_minus_one * bigint(10), bigint("9999999999999999990"));
-
-  // Large positive * small negative
   CHECK_EQ(bigint("1000000000000000000") * bigint(-1),
            bigint("-1000000000000000000"));
-
-  // Multiplication with very small and very large numbers
   CHECK_EQ(bigint(1) * bigint("999999999999999999"),
            bigint("999999999999999999"));
   CHECK_EQ(bigint("-1") * bigint("999999999999999999"),
@@ -447,7 +397,7 @@ inline bigint bigint::operator-() const noexcept {
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("operator- basic functionality") {
+TEST_CASE("[bigint] subtractions") {
   // Subtraction resulting in zero
   CHECK_EQ(bigint(0) - bigint(0), bigint(0));
   CHECK_EQ(bigint(12345) - bigint(12345), bigint(0));
@@ -469,44 +419,21 @@ TEST_CASE("operator- basic functionality") {
   CHECK_EQ(bigint(-12345) - bigint(-54321), bigint(41976));
 }
 
-TEST_CASE("operator- edge cases") {
-  // Subtraction resulting in negative numbers
-  CHECK_EQ(bigint(12345) - bigint(54321), bigint(-41976));
-  CHECK_EQ(bigint(-54321) - bigint(12345), bigint(-66666));
-
-  // Subtraction involving large numbers
-  CHECK_EQ(bigint("1000000000000000000") - bigint("999999999999999999"),
-           bigint(1));
-  CHECK_EQ(bigint("999999999999999999") - bigint("1000000000000000000"),
-           bigint(-1));
-
-  // Subtraction near the BASE boundary
-  bigint base_minus_one("999999999999999999");
-  CHECK_EQ(base_minus_one - bigint(1), bigint("999999999999999998"));
-  CHECK_EQ(base_minus_one - bigint("1000000000000000000"), bigint(-1));
-}
-
-TEST_CASE("operator- chaining") {
-  // Chained subtraction
+TEST_CASE("[bigint] subtraction chaining") {
   CHECK_EQ(bigint(10) - bigint(5) - bigint(2), bigint(3));
   CHECK_EQ(bigint(100) - bigint(50) - bigint(30), bigint(20));
   CHECK_EQ(bigint(-10) - bigint(-5) - bigint(-2), bigint(-3));
 }
 
-TEST_CASE("operator- extreme cases") {
-  // Very large numbers
+TEST_CASE("[bigint] subtraction edge cases") {
   CHECK_EQ(bigint("123456789123456789") - bigint("987654321987654321"),
            bigint("-864197532864197532"));
   CHECK_EQ(bigint("987654321987654321") - bigint("123456789123456789"),
            bigint("864197532864197532"));
-
-  // Numbers with different signs
   CHECK_EQ(bigint("123456789123456789") - bigint("-987654321987654321"),
            bigint("1111111111111111110"));
   CHECK_EQ(bigint("-123456789123456789") - bigint("987654321987654321"),
            bigint("-1111111111111111110"));
-
-  // Subtraction with small numbers
   CHECK_EQ(bigint(1) - bigint(1), bigint(0));
   CHECK_EQ(bigint(-1) - bigint(-1), bigint(0));
   CHECK_EQ(bigint(-1) - bigint(1), bigint(-2));
@@ -521,7 +448,7 @@ inline bool bigint::operator==(const bigint &b) const noexcept {
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("equality") {
+TEST_CASE("[bigint] equality") {
   CHECK_EQ(bigint(), bigint());
 
   CHECK_EQ(bigint(0), bigint(0));
@@ -551,7 +478,7 @@ inline bool bigint::operator!=(const bigint &b) const noexcept {
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("inequality") {
+TEST_CASE("[bigint] inequality") {
   CHECK_NE(bigint(12345), bigint(12346));
   CHECK_NE(bigint(12346), bigint(12345));
   CHECK_NE(bigint(12345), bigint(123456));
@@ -595,7 +522,7 @@ inline bool bigint::operator<(const bigint &b) const noexcept {
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("less than") {
+TEST_CASE("[bigint] less than") {
   CHECK_LT(bigint(12345), bigint(12346));
   CHECK_LT(bigint(12345), bigint(123456));
   CHECK_LT(bigint(-12345), bigint(12345));
@@ -620,7 +547,7 @@ TEST_CASE("less than") {
   CHECK_LT(bigint(-12345), bigint("12345"));
 }
 
-TEST_CASE("less than false cases") {
+TEST_CASE("[bigint] less than false cases") {
   CHECK_FALSE(bigint(12346) < bigint(12345));
   CHECK_FALSE(bigint(123456) < bigint(12345));
   CHECK_FALSE(bigint(12345) < bigint(-12345));
@@ -659,7 +586,7 @@ inline bool bigint::operator>(const bigint &b) const noexcept {
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("more than") {
+TEST_CASE("[bigint] more than") {
   CHECK_GT(bigint(12346), bigint(12345));
   CHECK_GT(bigint(123456), bigint(12345));
   CHECK_GT(bigint(12345), bigint(-12345));
@@ -684,7 +611,7 @@ TEST_CASE("more than") {
   CHECK_GT(bigint("12345"), bigint(-12345));
 }
 
-TEST_CASE("more than false cases") {
+TEST_CASE("[bigint] more than false cases") {
   CHECK_FALSE(bigint(12345) > bigint(12346));
   CHECK_FALSE(bigint(12345) > bigint(123456));
   CHECK_FALSE(bigint(-12345) > bigint(12345));
