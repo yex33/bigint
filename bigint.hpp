@@ -78,10 +78,12 @@ public:
 private:
   static constexpr WORD WORD_MAX = std::numeric_limits<WORD>::max();
   static constexpr DBLWORD BASE = static_cast<DBLWORD>(WORD_MAX) + 1;
+  static constexpr WORD WORD_BITS = sizeof(WORD) * 8;
 
   void val_plus(const bigint &b, std::size_t offset = 0) noexcept;
   void val_monus(const bigint &b) noexcept;
   void val_mult(const bigint &b) noexcept;
+  void left_shift(WORD bits);
 
   [[nodiscard]]
   bool val_less(const bigint &b) const noexcept;
@@ -102,7 +104,7 @@ inline bigint::bigint(int64_t n) noexcept : sign(false) {
   WORD chunk = static_cast<WORD>(n & WORD_MAX);
   while (chunk > 0) {
     val.push_back(chunk);
-    n = n >> (sizeof(WORD) * 8);
+    n = n >> WORD_BITS;
     chunk = static_cast<WORD>(n & WORD_MAX);
   }
 }
@@ -775,6 +777,24 @@ inline void bigint::val_mult(const bigint &b) noexcept {
     s.val_plus(*this * b.val[i], i);
   }
   val = s.val;
+}
+
+inline void bigint::left_shift(const WORD bits) {
+  if (!bits)
+    return;
+  if (bits > WORD_BITS) {
+    throw std::invalid_argument("trying to left shift too many bits");
+  }
+  WORD w = val[0] >> (WORD_BITS - bits);
+  val[0] <<= bits;
+  for (std::size_t i = 1; i < val.size(); i++) {
+    WORD ai = val[i];
+    val[i] = (ai << bits) | w;
+    w = ai >> (WORD_BITS - bits);
+  }
+  if (w) {
+    val.push_back(w);
+  }
 }
 
 inline bool bigint::val_less(const bigint &b) const noexcept {
