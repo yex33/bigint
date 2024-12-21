@@ -25,6 +25,7 @@ class bigint {
 protected:
   // sign == true if n is negative, sign == false if n is positive
   bool sign;
+  // val holds each digit of bigint
   std::vector<WORD> val;
 
 public:
