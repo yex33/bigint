@@ -42,7 +42,7 @@ public:
 
   /**
    * A constructor that takes a string and converts the string to an
-   * arbitrary-precision integer..
+   * arbitrary-precision integer.
    * @param sv the string to convert
    */
   explicit bigint(std::string_view sv, int base = 10) noexcept(false);
@@ -545,7 +545,7 @@ inline const bigint &bigint::operator++() noexcept {
   return *this;
 }
 
-inline bigint bigint::operator++(int _) noexcept {
+inline bigint bigint::operator++(int) noexcept {
   bigint res;
   res += *this;
   *this += 1;
@@ -557,7 +557,7 @@ inline const bigint &bigint::operator--() noexcept {
   return *this;
 }
 
-inline bigint bigint::operator--(int _) noexcept {
+inline bigint bigint::operator--(int) noexcept {
   bigint res;
   res += *this;
   *this -= bigint(1);
