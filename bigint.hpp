@@ -630,6 +630,31 @@ TEST_CASE("less than") {
   CHECK_LT(bigint("12345"), bigint(123456));
   CHECK_LT(bigint(-12345), bigint("12345"));
 }
+
+TEST_CASE("less than false cases") {
+  CHECK_FALSE(bigint(12346) < bigint(12345));
+  CHECK_FALSE(bigint(123456) < bigint(12345));
+  CHECK_FALSE(bigint(12345) < bigint(-12345));
+  CHECK_FALSE(bigint(-12345) < bigint(-123456));
+  CHECK_FALSE(bigint(123456789101113) < bigint(123456789101112));
+
+  CHECK_FALSE(bigint("12346") < bigint("12345"));
+  CHECK_FALSE(bigint("123456") < bigint("12345"));
+  CHECK_FALSE(bigint("12345") < bigint("-12345"));
+  CHECK_FALSE(bigint("-12345") < bigint("-123456"));
+
+  CHECK_FALSE(bigint("1234567891011121314151617181921") <
+              bigint("1234567891011121314151617181920"));
+  CHECK_FALSE(bigint("1234567891011121314151617181920") <
+              bigint("-1234567891011121314151617181920"));
+  CHECK_FALSE(bigint("1234567891011121314151617181920") <
+              bigint("123456789101112131415161718192"));
+
+  CHECK_FALSE(bigint(12346) < bigint("12345"));
+  CHECK_FALSE(bigint("12346") < bigint(12345));
+  CHECK_FALSE(bigint(123456) < bigint("12345"));
+  CHECK_FALSE(bigint("12345") < bigint(-12345));
+}
 #endif
 
 inline bool bigint::operator>(const bigint &b) const noexcept {
@@ -668,6 +693,31 @@ TEST_CASE("more than") {
   CHECK_GT(bigint("12346"), bigint(12345));
   CHECK_GT(bigint(123456), bigint("12345"));
   CHECK_GT(bigint("12345"), bigint(-12345));
+}
+
+TEST_CASE("more than false cases") {
+  CHECK_FALSE(bigint(12345) > bigint(12346));
+  CHECK_FALSE(bigint(12345) > bigint(123456));
+  CHECK_FALSE(bigint(-12345) > bigint(12345));
+  CHECK_FALSE(bigint(-123456) > bigint(-12345));
+  CHECK_FALSE(bigint(123456789101112) > bigint(123456789101113));
+
+  CHECK_FALSE(bigint("12345") > bigint("12346"));
+  CHECK_FALSE(bigint("12345") > bigint("123456"));
+  CHECK_FALSE(bigint("-12345") > bigint("12345"));
+  CHECK_FALSE(bigint("-123456") > bigint("-12345"));
+
+  CHECK_FALSE(bigint("1234567891011121314151617181920") >
+              bigint("1234567891011121314151617181921"));
+  CHECK_FALSE(bigint("-1234567891011121314151617181920") >
+              bigint("1234567891011121314151617181920"));
+  CHECK_FALSE(bigint("123456789101112131415161718192") >
+              bigint("1234567891011121314151617181920"));
+
+  CHECK_FALSE(bigint("12345") > bigint(12346));
+  CHECK_FALSE(bigint(12345) > bigint("12346"));
+  CHECK_FALSE(bigint("12345") > bigint(123456));
+  CHECK_FALSE(bigint(-12345) > bigint("12345"));
 }
 #endif
 
@@ -737,8 +787,8 @@ inline bool bigint::val_less(const bigint &b) const noexcept {
     return false;
   for (const auto [ai, bi] :
        std::views::zip(val, b.val) | std::views::reverse) {
-    if (ai < bi)
-      return true;
+    if (ai != bi)
+      return ai < bi;
   }
   return false;
 }
@@ -750,8 +800,8 @@ inline bool bigint::val_more(const bigint &b) const noexcept {
     return true;
   for (const auto [ai, bi] :
        std::views::zip(val, b.val) | std::views::reverse) {
-    if (ai > bi)
-      return true;
+    if (ai != bi)
+      return ai > bi;
   }
   return false;
 }
