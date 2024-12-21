@@ -79,9 +79,10 @@ private:
   static constexpr WORD WORD_MAX = std::numeric_limits<WORD>::max();
   static constexpr DBLWORD BASE = static_cast<DBLWORD>(WORD_MAX) + 1;
 
-  const bigint &val_plus(const bigint &b, std::size_t offset = 0) noexcept;
-  const bigint &val_monus(const bigint &b) noexcept;
-  const bigint &val_mult(const bigint &b) noexcept;
+  void val_plus(const bigint &b, std::size_t offset = 0) noexcept;
+  void val_monus(const bigint &b) noexcept;
+  void val_mult(const bigint &b) noexcept;
+
   [[nodiscard]]
   bool val_less(const bigint &b) const noexcept;
   [[nodiscard]]
@@ -740,8 +741,7 @@ inline std::ostream &operator<<(std::ostream &os, const bigint &a) noexcept {
   return os;
 }
 
-inline const bigint &bigint::val_plus(const bigint &b,
-                                      std::size_t offset) noexcept {
+inline void bigint::val_plus(const bigint &b, std::size_t offset) noexcept {
   if (b.val.size() + offset > val.size())
     val.resize(b.val.size() + offset, 0);
   WORD carry = 0;
@@ -754,10 +754,9 @@ inline const bigint &bigint::val_plus(const bigint &b,
   if (carry) {
     val.push_back(carry);
   }
-  return *this;
 }
 
-inline const bigint &bigint::val_monus(const bigint &b) noexcept {
+inline void bigint::val_monus(const bigint &b) noexcept {
   WORD carry = 0;
   for (std::size_t i = 0; i < val.size(); i++) {
     const WORD ai = val[i];
@@ -768,16 +767,14 @@ inline const bigint &bigint::val_monus(const bigint &b) noexcept {
   while (val.size() > 1 && !val.back()) {
     val.pop_back();
   }
-  return *this;
 }
 
-inline const bigint &bigint::val_mult(const bigint &b) noexcept {
+inline void bigint::val_mult(const bigint &b) noexcept {
   bigint s(0);
   for (std::size_t i = 0; i < b.val.size(); i++) {
     s.val_plus(*this * b.val[i], i);
   }
   val = s.val;
-  return *this;
 }
 
 inline bool bigint::val_less(const bigint &b) const noexcept {
