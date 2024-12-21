@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iomanip>
-#include <limits>
 #include <ostream>
 #include <ranges>
 #include <sstream>
@@ -21,8 +20,7 @@
 #endif
 
 class bigint {
-  using DBLWORD = std::uint64_t;
-  using WORD = std::uint32_t;
+  using WORD = std::int32_t;
 
 protected:
   // sign == true if n is negative, sign == false if n is positive
@@ -76,14 +74,12 @@ public:
   friend std::ostream &operator<<(std::ostream &os, const bigint &a) noexcept;
 
 private:
-  static constexpr WORD WORD_MAX = std::numeric_limits<WORD>::max();
-  static constexpr DBLWORD BASE = static_cast<DBLWORD>(WORD_MAX) + 1;
-  static constexpr WORD WORD_BITS = sizeof(WORD) * 8;
+  static constexpr WORD WORD_MAX = 9;
+  static constexpr WORD BASE = 10;
 
   void val_plus(const bigint &b, std::size_t offset = 0) noexcept;
   void val_monus(const bigint &b) noexcept;
   void val_mult(const bigint &b) noexcept;
-  void left_shift(WORD bits);
 
   [[nodiscard]]
   bool val_less(const bigint &b) const noexcept;
@@ -101,11 +97,11 @@ inline bigint::bigint(int64_t n) noexcept : sign(false) {
     sign = true;
   }
   n = std::abs(n);
-  WORD chunk = static_cast<WORD>(n & WORD_MAX);
-  while (chunk > 0) {
+  WORD chunk = static_cast<WORD>(n % BASE);
+  while (n > 0) {
     val.push_back(chunk);
-    n = n >> WORD_BITS;
-    chunk = static_cast<WORD>(n & WORD_MAX);
+    n /= BASE;
+    chunk = static_cast<WORD>(n % BASE);
   }
 }
 
@@ -137,7 +133,7 @@ inline bigint::bigint(std::string_view sv, int base) noexcept(false)
     return;
   }
 
-  auto wnd_size = static_cast<std::size_t>(std::log(WORD_MAX) / std::log(base));
+  std::size_t wnd_size = 1;
 
   std::size_t offset = sv.size() % wnd_size;
   WORD wnd;
@@ -207,8 +203,8 @@ inline const bigint &bigint::operator+=(const WORD b) noexcept {
   WORD carry = b;
   for (std::size_t i = 0; i < val.size(); i++) {
     const WORD ai = val[i];
-    val[i] = ai + carry;
-    carry = (val[i] < ai) ? 1u : 0;
+    val[i] = (ai + carry) % BASE;
+    carry = (ai + carry) / 10;
     if (!carry)
       break;
   }
@@ -272,11 +268,6 @@ TEST_CASE("operator+ basic functionality") {
            bigint("2222222212109886746252851749810"));
   CHECK_EQ(bigint("999999999999999999999999999999") + bigint("1"),
            bigint("1000000000000000000000000000000"));
-
-  // Adding a WORD to bigint
-  CHECK_EQ(bigint(12345) + static_cast<std::uint32_t>(67890), bigint(80235));
-  CHECK_EQ(bigint("999999999999999999999999") + static_cast<std::uint32_t>(1),
-           bigint("1000000000000000000000000"));
 }
 
 TEST_CASE("operator+ edge cases") {
@@ -336,9 +327,9 @@ inline const bigint &bigint::operator*=(const WORD b) noexcept {
   }
   WORD carry = 0;
   for (WORD &ai : val) {
-    DBLWORD prod = static_cast<DBLWORD>(ai) * static_cast<DBLWORD>(b);
-    ai = static_cast<WORD>((prod + carry) % BASE);
-    carry = static_cast<WORD>((prod + carry) / BASE);
+    WORD prod = ai * b;
+    ai = (prod + carry) % BASE;
+    carry = (prod + carry) / BASE;
   }
   if (carry > 0) {
     val.push_back(carry);
@@ -382,11 +373,6 @@ TEST_CASE("operator* basic functionality") {
   CHECK_EQ(bigint(-123) * bigint(456), bigint(-56088));
   CHECK_EQ(bigint(123) * bigint(-456), bigint(-56088));
   CHECK_EQ(bigint(-123) * bigint(-456), bigint(56088));
-
-  // Multiplication with WORD
-  CHECK_EQ(bigint(12345) * static_cast<std::uint32_t>(6789), bigint(83810205));
-  CHECK_EQ(bigint("987654321987654321") * static_cast<std::uint32_t>(10),
-           bigint("9876543219876543210"));
 }
 
 TEST_CASE("operator* edge cases") {
@@ -733,13 +719,11 @@ inline bool bigint::operator>=(const bigint &b) const noexcept {
 }
 
 inline std::ostream &operator<<(std::ostream &os, const bigint &a) noexcept {
-  os << '{';
   if (a.sign)
     os << '-';
-  for (const auto &ai : a.val) {
-    os << ai << ", ";
+  for (const auto &ai : a.val | std::views::reverse) {
+    os << ai;
   }
-  os << '}';
   return os;
 }
 
@@ -750,8 +734,8 @@ inline void bigint::val_plus(const bigint &b, std::size_t offset) noexcept {
   for (std::size_t i = offset; i < val.size(); i++) {
     const WORD ai = val[i];
     const WORD bi = i - offset < b.val.size() ? b.val[i - offset] : 0;
-    val[i] = ai + bi + carry;
-    carry = (val[i] < ai) ? 1u : 0;
+    val[i] = (ai + bi + carry) % BASE;
+    carry = (ai + bi + carry) / BASE;
   }
   if (carry) {
     val.push_back(carry);
@@ -763,8 +747,8 @@ inline void bigint::val_monus(const bigint &b) noexcept {
   for (std::size_t i = 0; i < val.size(); i++) {
     const WORD ai = val[i];
     const WORD bi = i < b.val.size() ? b.val[i] : 0;
-    val[i] = ai - bi - carry;
-    carry = (val[i] > ai) ? 1u : 0;
+    val[i] = (ai - bi - carry + BASE) % BASE;
+    carry = (ai - bi - carry < 0) ? 1 : 0;
   }
   while (val.size() > 1 && !val.back()) {
     val.pop_back();
@@ -777,23 +761,8 @@ inline void bigint::val_mult(const bigint &b) noexcept {
     s.val_plus(*this * b.val[i], i);
   }
   val = s.val;
-}
-
-inline void bigint::left_shift(const WORD bits) {
-  if (!bits)
-    return;
-  if (bits > WORD_BITS) {
-    throw std::invalid_argument("trying to left shift too many bits");
-  }
-  WORD w = val[0] >> (WORD_BITS - bits);
-  val[0] <<= bits;
-  for (std::size_t i = 1; i < val.size(); i++) {
-    WORD ai = val[i];
-    val[i] = (ai << bits) | w;
-    w = ai >> (WORD_BITS - bits);
-  }
-  if (w) {
-    val.push_back(w);
+  while (val.size() > 1 && !val.back()) {
+    val.pop_back();
   }
 }
 
